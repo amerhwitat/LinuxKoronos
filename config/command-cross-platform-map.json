@@ -1,0 +1,1110 @@
+{
+  "schema": "koronos-command-cross-platform-map/v1",
+  "generated_from": [
+    "ChimeraIIOS system/commands/ss64-command-catalog.json",
+    "ChimeraIIOS system/commands/online-command-catalog.json"
+  ],
+  "status": "curated-reference-map-not-exhaustive",
+  "platforms": [
+    "linux",
+    "windows",
+    "macos"
+  ],
+  "rules": [
+    "Names are candidate equivalents, not guaranteed semantic or option compatibility.",
+    "Windows entries distinguish cmd.exe built-ins/utilities from PowerShell cmdlets.",
+    "macOS generally uses BSD userland; GNU-specific flags may differ.",
+    "Availability and version must be detected on the target host before invocation.",
+    "Never invoke a mapped command through a shell string; use argv arrays and explicit provider policy."
+  ],
+  "commands": [
+    {
+      "command": "ls",
+      "linux": {
+        "name": "ls",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-ChildItem",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ls",
+        "provider": "host-detect"
+      },
+      "description": "list directory entries",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "pwd",
+      "linux": {
+        "name": "pwd",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Location",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "pwd",
+        "provider": "host-detect"
+      },
+      "description": "print working directory",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "cd",
+      "linux": {
+        "name": "cd",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Set-Location",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "cd",
+        "provider": "host-detect"
+      },
+      "description": "change shell working directory; shell builtin",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "cp",
+      "linux": {
+        "name": "cp",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Copy-Item",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "cp",
+        "provider": "host-detect"
+      },
+      "description": "copy files; metadata and flags differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "mv",
+      "linux": {
+        "name": "mv",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Move-Item",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "mv",
+        "provider": "host-detect"
+      },
+      "description": "move or rename files",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "rm",
+      "linux": {
+        "name": "rm",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Remove-Item",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "rm",
+        "provider": "host-detect"
+      },
+      "description": "remove files; recursive/force semantics differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "mkdir",
+      "linux": {
+        "name": "mkdir",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "New-Item -ItemType Directory",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "mkdir",
+        "provider": "host-detect"
+      },
+      "description": "create directories",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "rmdir",
+      "linux": {
+        "name": "rmdir",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Remove-Item",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "rmdir",
+        "provider": "host-detect"
+      },
+      "description": "remove directories; options differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "cat",
+      "linux": {
+        "name": "cat",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Content",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "cat",
+        "provider": "host-detect"
+      },
+      "description": "write file contents to stdout",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "less",
+      "linux": {
+        "name": "less",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "less",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "less",
+        "provider": "host-detect"
+      },
+      "description": "pager; requires optional provider on Windows",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "head",
+      "linux": {
+        "name": "head",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Content -TotalCount",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "head",
+        "provider": "host-detect"
+      },
+      "description": "first lines; option syntax differs",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "tail",
+      "linux": {
+        "name": "tail",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Content -Tail",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "tail",
+        "provider": "host-detect"
+      },
+      "description": "last lines; follow mode differs",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "grep",
+      "linux": {
+        "name": "grep",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Select-String",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "grep",
+        "provider": "host-detect"
+      },
+      "description": "pattern search; regex and encoding behavior differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "find",
+      "linux": {
+        "name": "find",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-ChildItem -Recurse",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "find",
+        "provider": "host-detect"
+      },
+      "description": "filesystem traversal; predicates differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "which",
+      "linux": {
+        "name": "which",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Command",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "which",
+        "provider": "host-detect"
+      },
+      "description": "resolve executable or command",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "whereis",
+      "linux": {
+        "name": "whereis",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Command",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "whereis",
+        "provider": "host-detect"
+      },
+      "description": "approximate command lookup; semantics differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "env",
+      "linux": {
+        "name": "env",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-ChildItem Env:",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "env",
+        "provider": "host-detect"
+      },
+      "description": "inspect environment variables",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "printenv",
+      "linux": {
+        "name": "printenv",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-ChildItem Env:",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "printenv",
+        "provider": "host-detect"
+      },
+      "description": "print environment variables",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "date",
+      "linux": {
+        "name": "date",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Date",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "date",
+        "provider": "host-detect"
+      },
+      "description": "display date and time",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "whoami",
+      "linux": {
+        "name": "whoami",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "whoami",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "whoami",
+        "provider": "host-detect"
+      },
+      "description": "current account identity",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "hostname",
+      "linux": {
+        "name": "hostname",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "hostname",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "hostname",
+        "provider": "host-detect"
+      },
+      "description": "host name",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "uname",
+      "linux": {
+        "name": "uname",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "systeminfo /?",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "uname",
+        "provider": "host-detect"
+      },
+      "description": "OS/kernel identity; Windows requires PowerShell/CIM for equivalents",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ps",
+      "linux": {
+        "name": "ps",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Process",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ps",
+        "provider": "host-detect"
+      },
+      "description": "process listing; output and filters differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "kill",
+      "linux": {
+        "name": "kill",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Stop-Process",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "kill",
+        "provider": "host-detect"
+      },
+      "description": "signal/terminate process; Windows semantics differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "df",
+      "linux": {
+        "name": "df",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Volume",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "df",
+        "provider": "host-detect"
+      },
+      "description": "filesystem capacity; not identical mount accounting",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "du",
+      "linux": {
+        "name": "du",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-ChildItem -Recurse | Measure-Object",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "du",
+        "provider": "host-detect"
+      },
+      "description": "directory usage; expensive and approximate",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "mount",
+      "linux": {
+        "name": "mount",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Volume",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "mount",
+        "provider": "host-detect"
+      },
+      "description": "mount inspection/control; not equivalent behavior",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "umount",
+      "linux": {
+        "name": "umount",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Dismount-Volume",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "umount",
+        "provider": "host-detect"
+      },
+      "description": "unmount volume; requires privileges and careful targeting",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ip",
+      "linux": {
+        "name": "ip",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-NetIPConfiguration",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ipconfig",
+        "provider": "host-detect"
+      },
+      "description": "network configuration; subcommands differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ping",
+      "linux": {
+        "name": "ping",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "ping",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ping",
+        "provider": "host-detect"
+      },
+      "description": "ICMP diagnostics; flags differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "curl",
+      "linux": {
+        "name": "curl",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "curl.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "curl",
+        "provider": "host-detect"
+      },
+      "description": "HTTP client; Windows PowerShell curl alias caveat",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "wget",
+      "linux": {
+        "name": "wget",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Invoke-WebRequest",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "curl -O",
+        "provider": "host-detect"
+      },
+      "description": "download resources; syntax differs",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "tar",
+      "linux": {
+        "name": "tar",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "tar.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "tar",
+        "provider": "host-detect"
+      },
+      "description": "archive operations; available versions differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "gzip",
+      "linux": {
+        "name": "gzip",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "gzip (optional)",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "gzip",
+        "provider": "host-detect"
+      },
+      "description": "gzip compression; optional on Windows",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ssh",
+      "linux": {
+        "name": "ssh",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "ssh",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ssh",
+        "provider": "host-detect"
+      },
+      "description": "OpenSSH client",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "scp",
+      "linux": {
+        "name": "scp",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "scp",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "scp",
+        "provider": "host-detect"
+      },
+      "description": "OpenSSH file copy",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "git",
+      "linux": {
+        "name": "git",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "git",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "git",
+        "provider": "host-detect"
+      },
+      "description": "version control; install separately",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "python3",
+      "linux": {
+        "name": "python3",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "py -3",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "python3",
+        "provider": "host-detect"
+      },
+      "description": "Python interpreter name varies",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "make",
+      "linux": {
+        "name": "make",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "nmake / make",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "make",
+        "provider": "host-detect"
+      },
+      "description": "build tool; dialects differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "cc",
+      "linux": {
+        "name": "cc",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "cl.exe / clang.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "clang",
+        "provider": "host-detect"
+      },
+      "description": "C compiler; ABI/toolchain differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "clang",
+      "linux": {
+        "name": "clang",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "clang.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "clang",
+        "provider": "host-detect"
+      },
+      "description": "LLVM compiler",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ld",
+      "linux": {
+        "name": "ld",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "link.exe / lld-link.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ld",
+        "provider": "host-detect"
+      },
+      "description": "linker formats and flags differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ar",
+      "linux": {
+        "name": "ar",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "lib.exe / llvm-ar.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ar",
+        "provider": "host-detect"
+      },
+      "description": "archive tool",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "objdump",
+      "linux": {
+        "name": "objdump",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "dumpbin.exe / llvm-objdump.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "otool / llvm-objdump",
+        "provider": "host-detect"
+      },
+      "description": "binary inspection; output formats differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "readelf",
+      "linux": {
+        "name": "readelf",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "dumpbin.exe / llvm-readobj.exe",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "otool / llvm-readobj",
+        "provider": "host-detect"
+      },
+      "description": "ELF/PE/Mach-O inspection tools differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "file",
+      "linux": {
+        "name": "file",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Item (limited)",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "file",
+        "provider": "host-detect"
+      },
+      "description": "file type identification; PowerShell equivalent is not exact",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "sha256sum",
+      "linux": {
+        "name": "sha256sum",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-FileHash -Algorithm SHA256",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "shasum -a 256",
+        "provider": "host-detect"
+      },
+      "description": "SHA-256 digest",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "chmod",
+      "linux": {
+        "name": "chmod",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "icacls / attrib",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "chmod",
+        "provider": "host-detect"
+      },
+      "description": "permissions model differs; ACLs are not POSIX mode bits",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "chown",
+      "linux": {
+        "name": "chown",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "icacls",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "chown",
+        "provider": "host-detect"
+      },
+      "description": "ownership/ACL management differs",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ln",
+      "linux": {
+        "name": "ln",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "New-Item -ItemType SymbolicLink",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ln",
+        "provider": "host-detect"
+      },
+      "description": "symlink privileges and semantics differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "man",
+      "linux": {
+        "name": "man",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Help",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "man",
+        "provider": "host-detect"
+      },
+      "description": "manual/help system",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "clear",
+      "linux": {
+        "name": "clear",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Clear-Host",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "clear",
+        "provider": "host-detect"
+      },
+      "description": "clear terminal screen",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "history",
+      "linux": {
+        "name": "history",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-History",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "history",
+        "provider": "host-detect"
+      },
+      "description": "interactive shell history",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "alias",
+      "linux": {
+        "name": "alias",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Set-Alias",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "alias",
+        "provider": "host-detect"
+      },
+      "description": "shell aliases; persistence differs",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "top",
+      "linux": {
+        "name": "top",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Process",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "top",
+        "provider": "host-detect"
+      },
+      "description": "interactive process monitor; optional providers",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "free",
+      "linux": {
+        "name": "free",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-CimInstance Win32_OperatingSystem",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "vm_stat",
+        "provider": "host-detect"
+      },
+      "description": "memory reporting; fields and units differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "lsof",
+      "linux": {
+        "name": "lsof",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Get-Process",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "lsof",
+        "provider": "host-detect"
+      },
+      "description": "open-file inspection; not exact equivalents",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "strace",
+      "linux": {
+        "name": "strace",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "Procmon / WPR",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "dtruss",
+        "provider": "host-detect"
+      },
+      "description": "system-call tracing; different privilege and event models",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "gdb",
+      "linux": {
+        "name": "gdb",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "WinDbg / CDB",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "lldb",
+        "provider": "host-detect"
+      },
+      "description": "debugger; debug formats and commands differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "lldb",
+      "linux": {
+        "name": "lldb",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "WinDbg / CDB",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "lldb",
+        "provider": "host-detect"
+      },
+      "description": "debugger",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "gcc",
+      "linux": {
+        "name": "gcc",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "gcc (MinGW/MSYS2)",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "gcc (Homebrew)",
+        "provider": "host-detect"
+      },
+      "description": "compiler availability and target ABI differ",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "cmake",
+      "linux": {
+        "name": "cmake",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "cmake",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "cmake",
+        "provider": "host-detect"
+      },
+      "description": "build-system generator",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "ninja",
+      "linux": {
+        "name": "ninja",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "ninja",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "ninja",
+        "provider": "host-detect"
+      },
+      "description": "build executor",
+      "options_compatibility": "not-assumed"
+    },
+    {
+      "command": "qemu-system-x86_64",
+      "linux": {
+        "name": "qemu-system-x86_64",
+        "provider": "host-detect"
+      },
+      "windows": {
+        "name": "qemu-system-x86_64",
+        "provider": "host-detect"
+      },
+      "macos": {
+        "name": "qemu-system-x86_64",
+        "provider": "host-detect"
+      },
+      "description": "system emulator; install separately",
+      "options_compatibility": "not-assumed"
+    }
+  ]
+}
