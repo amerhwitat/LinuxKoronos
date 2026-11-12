@@ -39,3 +39,40 @@ jobs:
           path: build/koronos-host
           if-no-files-found: error
           retention-days: 30
+
+  build-linux-kernel:
+    name: Linux 7.2.2 kernel / ${{ matrix.arch }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            cross: ""
+            packages: "build-essential bc bison flex libssl-dev libelf-dev dwarves cpio rsync curl gnupg"
+          - arch: arm64
+            cross: "aarch64-linux-gnu-"
+            packages: "build-essential bc bison flex libssl-dev libelf-dev dwarves cpio rsync curl gnupg gcc-aarch64-linux-gnu"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.packages }}
+      - name: Build and package Linux kernel 7.2.2
+        env:
+          ARCH: ${{ matrix.arch }}
+          CROSS_COMPILE: ${{ matrix.cross }}
+          JOBS: "2"
+          KERNEL_VERSION: "7.2.2"
+        run: bash kernel/build-linux-kernel.sh
+      - name: Upload kernel package and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-7.2.2-${{ matrix.arch }}
+          path: |
+            kernel-out/linux-7.2.2-${{ matrix.arch }}.tar.gz
+            kernel-out/linux-7.2.2-${{ matrix.arch }}.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 30
