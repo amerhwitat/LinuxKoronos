@@ -1,0 +1,234 @@
+{
+  "schema": "linuxkoronos-open-source-database-build-matrix/v1",
+  "policy": {
+    "only_osi_open_source_or_public_domain_engines_in_open_source_set": true,
+    "verify_license_and_upstream_checksum": true,
+    "database_engines_run_as_userspace_services": true,
+    "do_not_bundle_every_server_by_default": "Core profile builds SQLite; server and analytics backends are selectable build profiles to keep ISO size and resource requirements explicit.",
+    "adapter_binary_is_not_database_engine": "Koronos ABI adapters do not imply the upstream database server itself has been compiled."
+  },
+  "default_profile": [
+    "sqlite"
+  ],
+  "profiles": {
+    "core_embedded": [
+      "sqlite"
+    ],
+    "local_analytics": [
+      "sqlite",
+      "duckdb"
+    ],
+    "server_relational": [
+      "mariadb",
+      "postgresql",
+      "firebird"
+    ],
+    "key_value": [
+      "rocksdb",
+      "leveldb",
+      "valkey"
+    ],
+    "distributed": [
+      "cassandra",
+      "couchdb"
+    ]
+  },
+  "backends": [
+    {
+      "id": "mariadb",
+      "name": "MariaDB Community Server",
+      "category": "relational",
+      "license": "GPL-2.0",
+      "source_url": "https://github.com/MariaDB/server",
+      "docs_url": "https://mariadb.com/kb/en/building-mariadb-on-linux/",
+      "linux_package": "mariadb-server",
+      "windows_package": "MariaDB MSI/ZIP from official project",
+      "macos_package": "mariadb via Homebrew",
+      "build_system": "CMake",
+      "runtime_test": [
+        "mariadb --version",
+        "mysqladmin ping"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "postgresql",
+      "name": "PostgreSQL",
+      "category": "relational",
+      "license": "PostgreSQL License",
+      "source_url": "https://github.com/postgres/postgres",
+      "docs_url": "https://www.postgresql.org/docs/current/installation.html",
+      "linux_package": "postgresql",
+      "windows_package": "official Windows installer",
+      "macos_package": "postgresql via Homebrew",
+      "build_system": "configure/Make",
+      "runtime_test": [
+        "postgres --version",
+        "pg_isready"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite",
+      "category": "embedded-relational",
+      "license": "Public Domain",
+      "source_url": "https://sqlite.org/src",
+      "docs_url": "https://www.sqlite.org/howtocompile.html",
+      "linux_package": "sqlite3/libsqlite3-dev",
+      "windows_package": "SQLite official source bundle",
+      "macos_package": "sqlite via Homebrew or system SDK",
+      "build_system": "configure/Make",
+      "pinned_source": {
+        "version": "3.54.1",
+        "url": "https://www.sqlite.org/2026/sqlite-autoconf-3540100.tar.gz",
+        "sha3_256": "b6ced585c750916b1052667239a12c25a7ff34e7f06e1e6e01ecb0427657d9c4"
+      },
+      "runtime_test": [
+        "sqlite3 --version",
+        "sqlite3 :memory: 'select sqlite_version();'"
+      ],
+      "status": "core-source-build-in-ci"
+    },
+    {
+      "id": "duckdb",
+      "name": "DuckDB",
+      "category": "embedded-analytics",
+      "license": "MIT",
+      "source_url": "https://github.com/duckdb/duckdb",
+      "docs_url": "https://duckdb.org/docs/current/dev/building/overview",
+      "linux_package": "duckdb source build",
+      "windows_package": "DuckDB CMake/MSVC build",
+      "macos_package": "DuckDB CMake/Apple Clang build",
+      "build_system": "CMake/Make",
+      "runtime_test": [
+        "duckdb --version"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "firebird",
+      "name": "Firebird",
+      "category": "relational",
+      "license": "IPL-1.0/IDPL-1.0",
+      "source_url": "https://github.com/FirebirdSQL/firebird",
+      "docs_url": "https://firebirdsql.org/en/documentation/",
+      "linux_package": "firebird3.0-server",
+      "windows_package": "official Firebird installer",
+      "macos_package": "Firebird official packages/source",
+      "build_system": "CMake",
+      "runtime_test": [
+        "isql-fb -z"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "rocksdb",
+      "name": "RocksDB",
+      "category": "key-value-storage-engine",
+      "license": "Apache-2.0-or-GPL-2.0",
+      "source_url": "https://github.com/facebook/rocksdb",
+      "docs_url": "https://github.com/facebook/rocksdb/wiki/Installation-Guide",
+      "linux_package": "librocksdb-dev",
+      "windows_package": "CMake/MSVC source build",
+      "macos_package": "rocksdb via Homebrew",
+      "build_system": "Make/CMake",
+      "runtime_test": [
+        "rocksdb tools or Koronos adapter tests"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "leveldb",
+      "name": "LevelDB",
+      "category": "key-value-storage-engine",
+      "license": "BSD-3-Clause",
+      "source_url": "https://github.com/google/leveldb",
+      "docs_url": "https://github.com/google/leveldb/blob/main/README.md",
+      "linux_package": "libleveldb-dev",
+      "windows_package": "CMake/MSVC source build",
+      "macos_package": "leveldb via Homebrew",
+      "build_system": "CMake",
+      "runtime_test": [
+        "LevelDB unit tests and Koronos adapter tests"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "valkey",
+      "name": "Valkey",
+      "category": "key-value-cache-streams",
+      "license": "BSD-3-Clause",
+      "source_url": "https://github.com/valkey-io/valkey",
+      "docs_url": "https://valkey.io/topics/quickstart/",
+      "linux_package": "valkey",
+      "windows_package": "supported Linux container or WSL deployment",
+      "macos_package": "valkey via Homebrew",
+      "build_system": "Make",
+      "runtime_test": [
+        "valkey-server --version",
+        "valkey-cli ping"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "cassandra",
+      "name": "Apache Cassandra",
+      "category": "distributed-wide-column",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/apache/cassandra",
+      "docs_url": "https://cassandra.apache.org/doc/latest/cassandra/getting_started/",
+      "linux_package": "Java runtime plus Cassandra distribution/source",
+      "windows_package": "Java runtime plus Cassandra distribution/source",
+      "macos_package": "Java runtime plus Cassandra distribution/source",
+      "build_system": "Ant/Java",
+      "runtime_test": [
+        "nodetool version"
+      ],
+      "status": "source-and-adapter-integration-required"
+    },
+    {
+      "id": "couchdb",
+      "name": "Apache CouchDB",
+      "category": "document-json",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/apache/couchdb",
+      "docs_url": "https://docs.couchdb.org/en/stable/install/index.html",
+      "linux_package": "couchdb",
+      "windows_package": "official CouchDB installer",
+      "macos_package": "CouchDB official package/source",
+      "build_system": "Erlang/rebar3",
+      "runtime_test": [
+        "curl http://127.0.0.1:5984/"
+      ],
+      "status": "source-and-adapter-integration-required"
+    }
+  ],
+  "excluded_source_available": [
+    {
+      "name": "MongoDB Community Server",
+      "license": "SSPL",
+      "reason": "Source-available but not OSI-approved open source; excluded from open-source-only builds."
+    },
+    {
+      "name": "CockroachDB",
+      "license": "BSL-1.1",
+      "reason": "Source-available but not OSI-approved open source; excluded from open-source-only builds."
+    }
+  ],
+  "integration": {
+    "abi": "Koronos userspace database IPC ABI",
+    "interfaces": [
+      "C",
+      "C++",
+      "ODBC",
+      "JDBC",
+      "ADBC",
+      "HTTP",
+      "native-wire",
+      "embedded"
+    ],
+    "security": "Separate least-privilege service identities, explicit data roots, IPC ACLs, network exposure disabled unless configured.",
+    "persistence": "Database data directories must be on persistent writable storage; Live ISO uses ephemeral defaults unless a persistent target is explicitly configured."
+  }
+}
