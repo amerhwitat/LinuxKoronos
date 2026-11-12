@@ -32,7 +32,11 @@ xz --decompress --stdout "$ARCHIVE" | gpg --batch --verify "$SIGNATURE" -
 BUILD_DIR="$WORK_DIR/build-$ARCH"; STAGE_DIR="$WORK_DIR/stage-$ARCH"
 rm -rf "$BUILD_DIR" "$STAGE_DIR"; mkdir -p "$BUILD_DIR" "$STAGE_DIR"
 make -C "$SRC_DIR" O="$BUILD_DIR" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" defconfig
-make -C "$SRC_DIR" O="$BUILD_DIR" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" -j"$JOBS" "$IMAGE_TARGET" modules dtbs
+# x86 has no Device Tree build target; arm64 does. Do not request a
+# nonexistent dtbs goal on x86, while preserving DTB output for arm64.
+BUILD_TARGETS=("$IMAGE_TARGET" modules)
+if [[ "$ARCH" == arm64 ]]; then BUILD_TARGETS+=(dtbs); fi
+make -C "$SRC_DIR" O="$BUILD_DIR" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" -j"$JOBS" "${BUILD_TARGETS[@]}"
 make -C "$SRC_DIR" O="$BUILD_DIR" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" modules_install INSTALL_MOD_PATH="$STAGE_DIR/rootfs"
 make -C "$SRC_DIR" O="$BUILD_DIR" ARCH="$ARCH" CROSS_COMPILE="$CROSS_COMPILE" headers_install INSTALL_HDR_PATH="$STAGE_DIR/headers"
 install -D "$BUILD_DIR/$IMAGE_REL" "$STAGE_DIR/boot/$([[ "$ARCH" == arm64 ]] && echo Image || echo bzImage)"
