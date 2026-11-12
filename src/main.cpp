@@ -34,8 +34,9 @@ int run_command(int argc, char** argv) {
   if (pid < 0) { std::cerr << "fork: " << std::strerror(errno) << '\n'; return 1; }
   if (pid == 0) {
     execvp(child_argv[0], child_argv.data());
-    std::cerr << "exec " << child_argv[0] << ": " << std::strerror(errno) << '\n';
-    _exit(errno == ENOENT ? 127 : 126);
+    const int exec_error = errno;
+    std::cerr << "exec " << child_argv[0] << ": " << std::strerror(exec_error) << '\n';
+    _exit(exec_error == ENOENT ? 127 : 126);
   }
   int status = 0;
   while (waitpid(pid, &status, 0) < 0) {
