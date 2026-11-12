@@ -20,7 +20,13 @@ mkdir -p "$WORK_DIR" "$OUT_DIR"
 [[ -f "$ARCHIVE" ]] || curl --fail --location --retry 3 "$BASE_URL/linux-$KERNEL_VERSION.tar.xz" -o "$ARCHIVE"
 [[ -f "$SIGNATURE" ]] || curl --fail --location --retry 3 "$BASE_URL/linux-$KERNEL_VERSION.tar.sign" -o "$SIGNATURE"
 GNUPGHOME="$WORK_DIR/gnupg"; mkdir -p "$GNUPGHOME"; chmod 700 "$GNUPGHOME"; export GNUPGHOME
-gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys 647F28654894E3BD457199BE38DBBDC86092693E
+KERNEL_SIGNING_KEY=647F28654894E3BD457199BE38DBBDC86092693E
+# keys.openpgp.org may omit unverified UIDs, leaving GnuPG unable to use the
+# imported key for detached-signature verification. Use Ubuntu's public
+# SKS-compatible keyserver and pin the complete fingerprint before verifying.
+gpg --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys "$KERNEL_SIGNING_KEY"
+ACTUAL_FINGERPRINT="$(gpg --batch --with-colons --fingerprint "$KERNEL_SIGNING_KEY" | awk -F: '$1 == "fpr" { print $10; exit }')"
+[[ "$ACTUAL_FINGERPRINT" == "$KERNEL_SIGNING_KEY" ]] || { echo "Unexpected Linux kernel signing-key fingerprint: $ACTUAL_FINGERPRINT" >&2; exit 1; }
 gpg --batch --verify "$SIGNATURE" "$ARCHIVE"
 [[ -d "$SRC_DIR" ]] || tar -C "$WORK_DIR" -xf "$ARCHIVE"
 BUILD_DIR="$WORK_DIR/build-$ARCH"; STAGE_DIR="$WORK_DIR/stage-$ARCH"
