@@ -59,23 +59,6 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-  database-core-build:
-    name: SQLite core database source build
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install source build dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential curl python3
-      - name: Build checksum-verified SQLite source
-        run: bash tools/build-database-profile.sh core_embedded
-      - name: Upload SQLite build outputs and provenance
-        uses: actions/upload-artifact@v4
-        with:
-          name: linuxkoronos-sqlite-core-${{ runner.arch }}
-          path: dist/database/sqlite/
-          if-no-files-found: error
-          retention-days: 30
-
   build-linux-kernel:
     name: Linux 7.2.2 kernel / ${{ matrix.arch }}
     runs-on: ubuntu-24.04
