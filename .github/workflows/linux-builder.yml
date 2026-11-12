@@ -17,8 +17,10 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
       - name: Build
         run: cmake --build build --parallel 2
-      - name: Test
+      - name: Test C++ runtime
         run: ctest --test-dir build --output-on-failure
+      - name: Test Python command mapping tools
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Smoke test hosted runtime and process adapter
         run: bash tests/smoke.sh ./build/koronos-host
       - name: Package Linux runtime
