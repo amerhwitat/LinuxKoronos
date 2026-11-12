@@ -103,3 +103,24 @@ Suggested evidence states: `catalogued`, `source-reviewed`, `build-passing`, `ho
 ## 6. Safety and licensing
 
 Do not copy proprietary Windows or macOS operating-system binaries, frameworks, or SDK components into either OS repository without redistribution rights. Prefer clean-room behavioral compatibility, open-source providers, and documented external dependencies. Device flashing, disk formatting, bootloader changes, and service administration require explicit capability checks, device identity validation, signed manifests, and read-back verification.
+
+
+## 6. Generated Chimera command and ISA crosswalk
+
+The current Chimera II OS catalogue snapshot is reconciled into a machine-readable crosswalk:
+
+- [Generated command and ISA crosswalk](https://github.com/amerhwitat/ChimeraIIOS/blob/main/system/commands/generated-cross-platform-crosswalk.json)
+- [Generator](https://github.com/amerhwitat/ChimeraIIOS/blob/main/tools/commands/generate_cross_platform_crosswalk.py)
+- [Canonical command catalogue](https://github.com/amerhwitat/ChimeraIIOS/blob/main/system/commands/chimera-command-list.json)
+- [Canonical ISA database](https://github.com/amerhwitat/ChimeraIIOS/blob/main/isa/isa_database.json)
+- [Architecture backend registry](https://github.com/amerhwitat/ChimeraIIOS/blob/main/tools/isa/architecture-backends.json)
+
+The generated snapshot reconciles 892 unique command names across the seven catalogue namespaces, 104 architecture records, and 154 instruction-form records. Exact command-name matches are distinguished from curated semantic equivalents. The source command catalogue does not carry complete per-command option grammars, so option coverage is explicitly marked as absent rather than guessed. ISA backend matching records compiler targets, QEMU user-mode providers and binary-format metadata where declared; it does not promote a compile target or emulator to native conformance.
+
+A CI workflow regenerates the artifact and checks deterministic output and record counts. The command provider ledger, per-option conformance suite, per-ISA semantic vectors and actual target execution remain separate release gates.
+
+## 7. Database provider mapping
+
+The Chimera builder now includes distribution packages and development interfaces for MariaDB, PostgreSQL, SQLite and Redis, with a verification script that checks the client/server executables and installed package records. This is a builder-image provider set; it does not imply that database daemons are started in the ISO, that Kore manages them, or that they are Koronos-native.
+
+Additional open-source engines tracked for source/pinned-package integration are DuckDB (MIT), Firebird (IPL/IDPL), ClickHouse (Apache-2.0), Apache CouchDB (Apache-2.0) and Valkey (BSD-3-Clause). See the [database provider catalog](https://github.com/amerhwitat/ChimeraIIOS/blob/main/databases/database-provider-catalog.json). Any binary redistribution must preserve exact upstream versions, checksums, licenses and notices.
