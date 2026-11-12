@@ -19,7 +19,7 @@ jobs:
         run: cmake --build build --parallel 2
       - name: Test C++ runtime
         run: ctest --test-dir build --output-on-failure
-      - name: Test Python command mapping tools
+      - name: Test Python command and catalogue mapping tools
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: Smoke test hosted runtime and process adapter
         run: bash tests/smoke.sh ./build/koronos-host
@@ -39,6 +39,23 @@ jobs:
         with:
           name: linuxkoronos-host-executable-${{ runner.arch }}
           path: build/koronos-host
+          if-no-files-found: error
+          retention-days: 30
+
+  database-core-build:
+    name: SQLite core database source build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install source build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential curl python3
+      - name: Build checksum-verified SQLite source
+        run: bash tools/build-database-profile.sh core_embedded
+      - name: Upload SQLite build outputs and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-sqlite-core-${{ runner.arch }}
+          path: dist/database/sqlite/
           if-no-files-found: error
           retention-days: 30
 
