@@ -58,3 +58,7 @@ The current host runtime does not replace Linux's kernel, scheduler, VFS, networ
 - Full command/ISA provider catalogue, compatibility emulators, or multi-architecture bare-metal boot.
 
 A successful Linux-hosted build validates only this Linux process runtime. It is not evidence that the separate ChimeraIIOS ISO or a phone-flashable image has passed its own runtime acceptance gates.
+
+## Cross-platform command and userspace mapping
+
+See [COMMAND_AND_USERSPACE_MAPPING.md](docs/COMMAND_AND_USERSPACE_MAPPING.md) for the Linux/POSIX, BSD, macOS, Windows CMD and PowerShell command reference, the Linux-userspace-to-Koronos layer map, evidence gates, and the hosted-runtime boundary.
