@@ -1,0 +1,12 @@
+[Unit]
+Description=LinuxKoronos hosted runtime host probe
+Documentation=https://github.com/amerhwitat/LinuxKoronos
+After=default.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/koronos-host info
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
