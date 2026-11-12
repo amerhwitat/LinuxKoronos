@@ -1,0 +1,11 @@
+{
+  "schema": "linuxkoronos-host-profile/v1",
+  "edition": "hosted",
+  "host_os": "linux",
+  "architectures": ["x86_64", "aarch64"],
+  "privilege": "unprivileged",
+  "kernel_services": {"processes":"linux","memory":"linux","filesystem":"linux-vfs","network":"linux","device_drivers":"linux"},
+  "device_access": "opt-in; raw block-device and flashing access disabled in bootstrap",
+  "bare_metal_kernel": false,
+  "production_os": false
+}
