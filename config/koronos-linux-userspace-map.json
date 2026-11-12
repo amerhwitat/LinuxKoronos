@@ -144,6 +144,281 @@
       ],
       "hosted_status": "not-applicable",
       "freestanding_status": "blocked-pending-native-target-runtimes"
+    },
+    {
+      "id": "ipc",
+      "koronos": "ipc-and-message-bus",
+      "linux_reference": [
+        "POSIX IPC",
+        "D-Bus",
+        "AF_UNIX",
+        "eventfd",
+        "io_uring"
+      ],
+      "hosted_status": "planned-adapter",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "storage",
+      "koronos": "block-storage-and-filesystems",
+      "linux_reference": [
+        "Linux block layer",
+        "device mapper",
+        "LVM2",
+        "mdadm",
+        "e2fsprogs",
+        "btrfs-progs",
+        "xfsprogs",
+        "exfatprogs",
+        "ntfs-3g"
+      ],
+      "hosted_status": "host-capability-only",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "security",
+      "koronos": "identity-and-security",
+      "linux_reference": [
+        "PAM",
+        "shadow-utils",
+        "sudo",
+        "polkit",
+        "Linux capabilities",
+        "SELinux",
+        "AppArmor",
+        "seccomp"
+      ],
+      "hosted_status": "host-policy-only",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "users",
+      "koronos": "users-groups-and-sessions",
+      "linux_reference": [
+        "shadow-utils",
+        "login",
+        "logind",
+        "PAM",
+        "utmp"
+      ],
+      "hosted_status": "host-session-conditional",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "logging",
+      "koronos": "logging-and-audit",
+      "linux_reference": [
+        "journald",
+        "syslog-ng",
+        "rsyslog",
+        "auditd",
+        "logrotate"
+      ],
+      "hosted_status": "host-logs-only",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "packaging",
+      "koronos": "package-management",
+      "linux_reference": [
+        "APT/dpkg",
+        "RPM/DNF",
+        "APK",
+        "Pacman",
+        "Flatpak",
+        "AppImage"
+      ],
+      "hosted_status": "host-package-manager-discovery",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "database",
+      "koronos": "database-services-and-engines",
+      "linux_reference": [
+        "MariaDB",
+        "PostgreSQL",
+        "SQLite",
+        "DuckDB",
+        "Firebird",
+        "RocksDB",
+        "LevelDB",
+        "Valkey",
+        "Cassandra",
+        "CouchDB"
+      ],
+      "hosted_status": "profile-manifest-added-sqlite-build-ci-pending",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "audio",
+      "koronos": "audio-and-media",
+      "linux_reference": [
+        "PipeWire",
+        "ALSA",
+        "PulseAudio",
+        "GStreamer",
+        "FFmpeg"
+      ],
+      "hosted_status": "host-audio-conditional",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "input",
+      "koronos": "input-and-hotplug",
+      "linux_reference": [
+        "libinput",
+        "evdev",
+        "udev",
+        "seatd"
+      ],
+      "hosted_status": "host-input-conditional",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "display-protocols",
+      "koronos": "display-server-and-protocols",
+      "linux_reference": [
+        "Wayland",
+        "wlroots",
+        "X.Org Server",
+        "Xwayland",
+        "Mesa",
+        "DRM/KMS"
+      ],
+      "hosted_status": "host-display-conditional",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "containers",
+      "koronos": "containers-and-isolation",
+      "linux_reference": [
+        "OCI",
+        "runc",
+        "containerd",
+        "Podman",
+        "namespaces",
+        "cgroups"
+      ],
+      "hosted_status": "host-container-tools-planned",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "virtualization",
+      "koronos": "virtualization-and-emulation",
+      "linux_reference": [
+        "KVM",
+        "QEMU TCG",
+        "QEMU system emulation",
+        "libvirt",
+        "Hyper-V",
+        "Apple Hypervisor"
+      ],
+      "hosted_status": "host-provider-discovery",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "firmware",
+      "koronos": "firmware-and-boot-services",
+      "linux_reference": [
+        "UEFI",
+        "EDK II",
+        "GRUB 2",
+        "fwupd",
+        "ACPI",
+        "SMBIOS"
+      ],
+      "hosted_status": "not-applicable-to-hosted-runtime",
+      "freestanding_status": "blocked-pending-native-target-runtimes"
+    },
+    {
+      "id": "power",
+      "koronos": "power-and-thermal",
+      "linux_reference": [
+        "systemd-logind",
+        "UPower",
+        "thermald",
+        "cpufrequtils"
+      ],
+      "hosted_status": "host-sensor-discovery-planned",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "memory",
+      "koronos": "memory-and-swap",
+      "linux_reference": [
+        "mmap",
+        "mprotect",
+        "swapfile",
+        "zram",
+        "zswap",
+        "NUMA"
+      ],
+      "hosted_status": "host-kernel-managed",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "localization",
+      "koronos": "locale-and-time",
+      "linux_reference": [
+        "glibc locales",
+        "ICU",
+        "tzdata",
+        "gettext"
+      ],
+      "hosted_status": "host-locale-inheritance",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "web-runtime",
+      "koronos": "web-and-remote-ui",
+      "linux_reference": [
+        "HTTP server",
+        "WebSocket",
+        "xterm.js",
+        "PTY broker",
+        "TLS"
+      ],
+      "hosted_status": "not-implemented",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "developer-workflow",
+      "koronos": "ide-and-debugger",
+      "linux_reference": [
+        "VS Code OSS",
+        "GCC",
+        "LLVM/Clang",
+        "GDB",
+        "LLDB",
+        "Valgrind",
+        "strace",
+        "perf",
+        "objdump",
+        "readelf"
+      ],
+      "hosted_status": "host-tool-invocation-planned",
+      "freestanding_status": "incomplete"
+    },
+    {
+      "id": "dos-legacy",
+      "koronos": "dos-and-retro-compatibility",
+      "linux_reference": [
+        "DOSBox Staging",
+        "86Box",
+        "QEMU"
+      ],
+      "hosted_status": "optional-provider-discovery",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "windows-mounts",
+      "koronos": "windows-drive-mounts",
+      "linux_reference": [
+        "WSL /mnt/c-style drive aliases",
+        "DrvFs-compatible mount semantics"
+      ],
+      "hosted_status": "path-alias-validation-only",
+      "freestanding_status": "not-implemented"
     }
   ],
   "provider_provenance_required": [
@@ -167,5 +442,39 @@
     "provider-provenance",
     "native-kernel-boot-separate",
     "live-installer-recovery-handoff-separate"
+  ],
+  "completeness": {
+    "status": "reference-map-expanded-implementation-incomplete",
+    "groups_total": 31,
+    "statement": "This map describes the intended Linux-to-Koronos userspace correspondence. Hosted Linux mode delegates to the Linux kernel; it is not a full Koronos-native userspace or freestanding OS. Only explicit tested providers may be marked implemented.",
+    "next_gates": [
+      "implement ABI adapters",
+      "pin upstream sources and licenses",
+      "build per-target binaries",
+      "run integration tests",
+      "verify native Koronos implementation separately"
+    ]
+  },
+  "reference_operating_systems": [
+    {
+      "name": "Linux",
+      "purpose": "primary userspace, syscall, VFS, service, graphics and package-management reference",
+      "url": "https://www.kernel.org/doc/html/latest/"
+    },
+    {
+      "name": "FreeBSD",
+      "purpose": "alternative POSIX userspace, rc.d, jails, VFS and networking reference",
+      "url": "https://docs.freebsd.org/en/"
+    },
+    {
+      "name": " illumos/Solaris",
+      "purpose": "SMF service management, ZFS, DTrace and UNIX reference",
+      "url": "https://illumos.org/books/"
+    },
+    {
+      "name": "Open Group POSIX",
+      "purpose": "portable interface and command semantics reference",
+      "url": "https://pubs.opengroup.org/onlinepubs/9799919799/"
+    }
   ]
 }
