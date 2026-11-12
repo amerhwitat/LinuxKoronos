@@ -10,6 +10,7 @@ profile="$("$bin" profile)"
 grep -q '^profile=linux-hosted-v1$' <<<"$profile"
 grep -q '^bare_metal_kernel=false$' <<<"$profile"
 out="$("$bin" run -- /usr/bin/printf 'host-bridge-ok\n')"
+printf 'process-adapter-output=%q\n' "$out"
 [[ "$out" == "host-bridge-ok" ]]
 set +e
 "$bin" run -- /usr/bin/false
