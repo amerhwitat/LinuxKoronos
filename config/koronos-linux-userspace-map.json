@@ -1,0 +1,171 @@
+{
+  "schema": "koronos-linux-userspace-map/v1",
+  "edition": "LinuxKoronos-hosted",
+  "mapping_status": "reference-and-integration-plan",
+  "host_kernel_owner": "Linux",
+  "koronos_kernel_replaced": false,
+  "groups": [
+    {
+      "id": "process",
+      "koronos": "process-supervision",
+      "linux_reference": [
+        "fork",
+        "execve",
+        "waitid",
+        "systemd"
+      ],
+      "hosted_status": "partial",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "filesystem",
+      "koronos": "vfs-and-mounts",
+      "linux_reference": [
+        "Linux VFS",
+        "FHS",
+        "util-linux mount"
+      ],
+      "hosted_status": "planned-read-only-path-adapter",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "commands",
+      "koronos": "command-provider-registry",
+      "linux_reference": [
+        "GNU coreutils",
+        "BusyBox",
+        "findutils",
+        "grep",
+        "sed",
+        "gawk",
+        "util-linux",
+        "procps-ng"
+      ],
+      "hosted_status": "provider-discovery-needed",
+      "freestanding_status": "incomplete"
+    },
+    {
+      "id": "terminal",
+      "koronos": "pty-terminal-and-shells",
+      "linux_reference": [
+        "Bash",
+        "Dash",
+        "Zsh",
+        "Fish",
+        "Readline",
+        "ncurses"
+      ],
+      "hosted_status": "process-launch-only",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "network",
+      "koronos": "network-services",
+      "linux_reference": [
+        "iproute2",
+        "NetworkManager",
+        "systemd-networkd",
+        "nftables",
+        "OpenSSH"
+      ],
+      "hosted_status": "host-capability-only",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "services",
+      "koronos": "service-manager",
+      "linux_reference": [
+        "systemd",
+        "SysV init",
+        "D-Bus"
+      ],
+      "hosted_status": "planned-user-session-translation",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "devices",
+      "koronos": "device-model",
+      "linux_reference": [
+        "udev",
+        "sysfs",
+        "libudev"
+      ],
+      "hosted_status": "read-only-discovery-planned",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "graphics",
+      "koronos": "desktop-and-display",
+      "linux_reference": [
+        "Wayland",
+        "wlroots",
+        "X.Org",
+        "Mesa",
+        "GTK",
+        "Qt",
+        "XDG portals"
+      ],
+      "hosted_status": "host-display-conditional",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "developer-tools",
+      "koronos": "toolchain-and-debugger",
+      "linux_reference": [
+        "GCC",
+        "LLVM/Clang",
+        "binutils",
+        "GDB",
+        "LLDB",
+        "QEMU"
+      ],
+      "hosted_status": "host-tool-invocation-planned",
+      "freestanding_status": "incomplete"
+    },
+    {
+      "id": "compatibility",
+      "koronos": "binary-compatibility",
+      "linux_reference": [
+        "binfmt_misc",
+        "Wine",
+        "QEMU"
+      ],
+      "hosted_status": "optional-host-providers",
+      "freestanding_status": "not-implemented"
+    },
+    {
+      "id": "boot",
+      "koronos": "native-boot-and-target-handoff",
+      "linux_reference": [
+        "GRUB",
+        "dracut",
+        "initramfs-tools",
+        "systemd init"
+      ],
+      "hosted_status": "not-applicable",
+      "freestanding_status": "blocked-pending-native-target-runtimes"
+    }
+  ],
+  "provider_provenance_required": [
+    "upstream_url",
+    "version",
+    "license",
+    "source_sha256",
+    "target_abi",
+    "build_recipe",
+    "test_result"
+  ],
+  "safety": {
+    "download_proprietary_binaries": false,
+    "implicit_host_mounts": false,
+    "implicit_device_writes": false,
+    "execute_untrusted_binaries": false
+  },
+  "release_gates": [
+    "hosted-build-and-ctest",
+    "process-adapter-smoke",
+    "provider-provenance",
+    "native-kernel-boot-separate",
+    "live-installer-recovery-handoff-separate"
+  ]
+}
