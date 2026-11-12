@@ -22,10 +22,20 @@ mkdir -p "$WORK_DIR" "$OUT_DIR"
 GNUPGHOME="$WORK_DIR/gnupg"; mkdir -p "$GNUPGHOME"; chmod 700 "$GNUPGHOME"; export GNUPGHOME
 KERNEL_SIGNING_KEY=647F28654894E3BD457199BE38DBBDC86092693E
 # Kernel.org signs the uncompressed .tar stream, not the downloaded .tar.xz.
-# Fetch the release key through kernel.org WKD (TLS-authenticated), pin its
-# full fingerprint, then verify the decompressed stream before extraction.
-gpg --batch --locate-keys gregkh@kernel.org
-ACTUAL_FINGERPRINT="$(gpg --batch --with-colons --fingerprint gregkh@kernel.org | awk -F: '$1 == "fpr" { print $10; exit }')"
+# Prefer kernel.org WKD (TLS-authenticated); CI runners can intermittently
+# time out on WKD, so fall back to public HKPS keyservers. The full primary
+# fingerprint is pinned and checked after import, regardless of the source.
+if ! gpg --batch --locate-keys gregkh@kernel.org; then
+  imported=false
+  for keyserver in hkps://keys.openpgp.org hkps://keyserver.ubuntu.com; do
+    if gpg --batch --keyserver "$keyserver" --recv-keys "$KERNEL_SIGNING_KEY"; then
+      imported=true
+      break
+    fi
+  done
+  [[ "$imported" == true ]] || { echo "Unable to retrieve pinned Linux kernel signing key from WKD or fallback HKPS keyservers" >&2; exit 1; }
+fi
+ACTUAL_FINGERPRINT="$(gpg --batch --with-colons --fingerprint "$KERNEL_SIGNING_KEY" | awk -F: '$1 == "fpr" { print $10; exit }')"
 [[ "$ACTUAL_FINGERPRINT" == "$KERNEL_SIGNING_KEY" ]] || { echo "Unexpected Linux kernel signing-key fingerprint: $ACTUAL_FINGERPRINT" >&2; exit 1; }
 xz --decompress --stdout "$ARCHIVE" | gpg --batch --verify "$SIGNATURE" -
 [[ -d "$SRC_DIR" ]] || tar -C "$WORK_DIR" -xf "$ARCHIVE"
