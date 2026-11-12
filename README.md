@@ -24,6 +24,10 @@ BUILD_DIR=build bash tools/package-linux.sh
 
 The Linux builder workflow uses Ubuntu 24.04, warnings-as-errors, CTest, process-adapter smoke tests, and publishes a compressed Linux runtime package plus its SHA-256 file as workflow artifacts.
 
+## Upstream Linux kernel build
+
+The `feat/linux-7.2.2-kernel-build` branch also adds a separately verified upstream Linux 7.2.2 build pipeline for x86 and arm64. It produces kernel images, modules, device-tree outputs, exported headers, and checksummed packages when its CI jobs complete. This kernel build is a host-kernel reference and is not a Koronos bare-metal boot image.
+
 ## Usage
 
 ```sh
