@@ -19,5 +19,23 @@ jobs:
         run: cmake --build build --parallel 2
       - name: Test
         run: ctest --test-dir build --output-on-failure
-      - name: Smoke test subprocess bridge
-        run: ./build/koronos-host run -- /usr/bin/printf 'host-bridge-ok\\n'
+      - name: Smoke test hosted runtime and process adapter
+        run: bash tests/smoke.sh ./build/koronos-host
+      - name: Package Linux runtime
+        run: BUILD_DIR=build bash tools/package-linux.sh
+      - name: Upload LinuxKoronos runtime package
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-linux-hosted-${{ runner.arch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload raw host executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-host-executable-${{ runner.arch }}
+          path: build/koronos-host
+          if-no-files-found: error
+          retention-days: 30
