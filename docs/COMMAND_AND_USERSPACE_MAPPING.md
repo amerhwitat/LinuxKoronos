@@ -180,9 +180,9 @@ Linux's initramfs `/init` is PID 1 (or hands off to the real init); it is not eq
 
 | Target | Linux reference model | Koronos entry artifact | Current verified scope | Remaining production work |
 |---|---|---|---|---|
-| Live | initramfs `/init`, systemd/sysvinit service graph, udev/device discovery, display manager | `target-init-live.elf`, Live initramfs and Live manifest | Native ELF enters ring 3, performs DPL3 syscall acknowledgement, emits Live readiness, exits cleanly in QEMU target tests | Real root/runtime activation, device discovery, network/audio/storage services, compositor/X server, login/session and app launch |
-| Installer | Anaconda, Debian Installer, Subiquity/ curtin style installer environment | `target-init-installer.elf`, installation image, manifest and installer contracts | Native ELF handoff and installer target readiness verified; current implementation is a dry-run storage plan | Partition discovery, explicit destructive-operation confirmation, GPT/MBR handling, filesystem creation, block-device writes, bootloader install, rollback and post-install boot test |
-| Recovery | initramfs emergency shell, systemd rescue/emergency targets, fsck and recovery utilities | `target-init-recovery.elf`, Recovery initramfs and manifest | Native ELF handoff and recovery readiness verified; current implementation reports diagnostics | Real read-only-first volume discovery, filesystem-specific repair tools, repair logs, backup/rollback safeguards and damaged-image tests |
+| Live | initramfs `/init`, systemd/sysvinit service graph, udev/device discovery, display manager | `target-init-live.elf`, Live initramfs and Live manifest | OctavianOS candidate: native ELF enters ring 3, performs DPL3 syscall acknowledgement, emits Live readiness, and remains resident as kernel-verified PID 1; BIOS and UEFI acceptance passed | Real root/runtime activation, device discovery, network/audio/storage services, compositor/X server, login/session and app launch |
+| Installer | Anaconda, Debian Installer, Subiquity/ curtin style installer environment | `target-init-installer.elf`, installation image, manifest and installer contracts | OctavianOS candidate: persistent PID 1 and installer readiness passed BIOS and UEFI; current implementation is still a dry-run storage plan with no block writes | Partition discovery, explicit destructive-operation confirmation, GPT/MBR handling, filesystem creation, block-device writes, bootloader install, rollback and post-install boot test |
+| Recovery | initramfs emergency shell, systemd rescue/emergency targets, fsck and recovery utilities | `target-init-recovery.elf`, Recovery initramfs and manifest | OctavianOS candidate: persistent PID 1 and recovery readiness passed BIOS and UEFI; current implementation is still diagnostics-only with no filesystem repair | Real read-only-first volume discovery, filesystem-specific repair tools, repair logs, backup/rollback safeguards and damaged-image tests |
 
 ### Linux userspace layers to Koronos userspace services
 
@@ -215,3 +215,15 @@ The LinuxKoronos executable is a Linux-hosted process adapter. It uses Linux hos
 - [ ] BIOS and UEFI traces are retained with exact source revision, ISO digest and toolchain metadata.
 
 A checkmark in an upstream CI job should be interpreted only against the tests actually run. Never promote the narrow ring-3 handshake to full userspace or release acceptance.
+
+
+### Persistent PID 1 verification update — 2026-11-13
+
+The OctavianOS candidate branch fixed a real lifecycle defect in which each target init printed readiness and immediately exited, allowing the kernel to reclaim its address space. The corrected candidate keeps Live, Installer and Recovery init resident, confirms the same process-table PID is still RUNNING, disarms the startup-only timeout only after readiness, and emits the kernel-owned PID1 ACTIVE marker after the user-authored readiness bytes.
+
+Evidence:
+- [Six-case target/firmware acceptance #43412390841](https://github.com/amerhwitat/OctavianOS/actions/runs/43412390841): Live, Installer and Recovery passed BIOS and UEFI.
+- [Native ISO build and full-ISO QEMU acceptance #43412390877](https://github.com/amerhwitat/OctavianOS/actions/runs/43412390877): build, artwork validation, target routing, complete ISO boot and full-ISO userspace verifier passed.
+- Candidate ISO SHA-256: ac5d11e895ea0b8d70e2127b276099e509b7ca51996c7efe09e8368405dde745.
+
+This verifies persistent PID 1 handoff, not complete production userspace. Live is still a text-console payload; Installer does not write disks; Recovery does not repair filesystems; no full VFS/rootfs activation, service supervision, compositor, or desktop session is proven. The LinuxKoronos binary remains a Linux-hosted adapter and must not be conflated with this native Koronos boot path.
