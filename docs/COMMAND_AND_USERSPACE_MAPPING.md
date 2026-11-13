@@ -124,3 +124,35 @@ A CI workflow regenerates the artifact and checks deterministic output and recor
 The Chimera builder now includes distribution packages and development interfaces for MariaDB, PostgreSQL, SQLite and Redis, with a verification script that checks the client/server executables and installed package records. This is a builder-image provider set; it does not imply that database daemons are started in the ISO, that Kore manages them, or that they are Koronos-native.
 
 Additional open-source engines tracked for source/pinned-package integration are DuckDB (MIT), Firebird (IPL/IDPL), ClickHouse (Apache-2.0), Apache CouchDB (Apache-2.0) and Valkey (BSD-3-Clause). See the [database provider catalog](https://github.com/amerhwitat/ChimeraIIOS/blob/main/databases/database-provider-catalog.json). Any binary redistribution must preserve exact upstream versions, checksums, licenses and notices.
+
+## 8. Linux kernel-to-userspace handoff reference for Koronos
+
+Use Linux as a behavioral and engineering reference, not as a claim that the Linux kernel ABI is already implemented by Koronos. The reference boot path is:
+
+1. Firmware transfers control to the bootloader; the bootloader loads the kernel and initramfs and supplies the machine/boot parameters.
+2. The kernel initializes memory management, interrupt handling, scheduler, device discovery, VFS and the root-device path.
+3. The kernel unpacks the initramfs and executes its first userspace process (/init, PID 1). If no initramfs init is supplied, Linux searches its configured init candidates on the mounted root filesystem.
+4. The initramfs init mounts or prepares required pseudo-filesystems and devices, discovers the real root, validates it, and performs the root transition (commonly switch_root or pivot_root).
+5. PID 1 starts the service manager and target-specific system services, then launches the selected login/display/session path. Readiness is a userspace assertion, not merely a kernel boot banner.
+
+Koronos should preserve the same separation while using its own explicit contract:
+
+| Linux reference event | Koronos handoff event | Required evidence |
+|---|---|---|
+| Bootloader passes kernel/initramfs | Jasper/Gates/GRUB passes the Koronos image and typed Multiboot2 modules | Boot report, module type/size/hash and target identity |
+| Kernel initializes scheduler, memory and VFS | Koronos emits KORONOS READY only after core services and module table are usable | QEMU debugcon marker plus kernel invariant checks |
+| Kernel executes /init as PID 1 | target_launch validates the selected target ELF and enters its ring-3 entry point | ELF admission, address-space setup, ring-3 transition and target PID |
+| Init mounts root and starts services | Live/Installer/Recovery init consumes its target manifest and mounts its declared root/runtime | Mount and dependency trace; fail closed on missing providers |
+| Service manager reaches target readiness | Kore reports target-specific service readiness | Per-service health checks and explicit target-ready marker |
+| Display manager starts a desktop session | Display server/compositor starts the selected desktop profile | Display/input provider readiness, shell marker and app-launch smoke tests |
+
+The three Koronos target contracts must remain distinct:
+
+- **Live:** interactive live environment, storage discovery and display/session startup.
+- **Installer:** partition and filesystem planning followed by explicit, confirmed block-device writes, read-back verification and rollback/error handling.
+- **Recovery:** emergency shell and diagnostics first; filesystem repair is a separate privileged operation with explicit target selection and post-repair verification.
+
+A target init ELF entering ring 3 proves the kernel-to-userspace control transfer only. It does not prove that a graphical session, installer write path, recovery repair path, or all Linux userspace services are complete. Keep these as separate acceptance gates.
+
+The LinuxKoronos hosted executable is a different path: Linux remains the real host kernel and PID 1; the adapter launches child processes with the host process API. It is not evidence of the freestanding Koronos boot sequence above.
+
