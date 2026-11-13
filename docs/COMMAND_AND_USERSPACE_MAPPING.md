@@ -156,3 +156,62 @@ A target init ELF entering ring 3 proves the kernel-to-userspace control transfe
 
 The LinuxKoronos hosted executable is a different path: Linux remains the real host kernel and PID 1; the adapter launches child processes with the host process API. It is not evidence of the freestanding Koronos boot sequence above.
 
+
+
+## Linux boot handoff reference and Koronos target mapping
+
+This section treats Linux as a behavioral reference, not as code that can be relabeled as a Koronos implementation. The Linux sequence below is the reference contract used when designing the Linux-hosted Koronos adapter and the native Koronos target loader.
+
+### Linux kernel-to-userspace sequence
+
+| Linux reference stage | Observable Linux behavior | Koronos counterpart | Required evidence |
+|---|---|---|---|
+| Firmware and bootloader | Firmware loads GRUB/systemd-boot and the selected kernel plus initramfs | BIOS/UEFI → GRUB/Jasper/Gates → Multiboot2 Koronos ELF and modules | Boot report, kernel ELF validation, firmware boot trace |
+| Kernel entry | Kernel validates boot parameters, memory map, command line and initrd | Koronos validates Multiboot2 information and classifies bounded modules | Kernel debug trace and module-classification tests |
+| Early userspace | Kernel unpacks initramfs and executes its configured `/init` | Koronos selects exactly one `USER_INIT_ELF` with a matching `target=` value | Module count, target match, ELF admission and address-space checks |
+| Process entry | Linux transfers control to PID 1 in userspace | Koronos enters the admitted ELF at CPL3 with a dedicated CR3 and bounded stack | CPL3 syscall acknowledgement, RIP/CR3/PID validation |
+| Root transition | Early init mounts the real root and switches root/pivots root | Target init mounts or activates its target root/runtime through explicit target services | Mount/root transition trace; not currently implied by ring-3 entry |
+| Service startup | PID 1 starts configured services and reaches a declared boot target | Kore/service manager starts declared Koronos services and reports target readiness | Per-service readiness, dependency state, exit status and target marker |
+| Session/display | Display manager starts compositor/X server and a user session | Native display server/compositor starts the selected desktop profile | Compositor protocol test, session launch and visible desktop smoke test |
+
+Linux's initramfs `/init` is PID 1 (or hands off to the real init); it is not equivalent to merely loading an ELF into ring 3. Likewise, a successful CPL3 entry and target-specific readiness marker prove the narrow init handshake only. They do not prove root mounting, service completeness, a graphical session, disk installation, or filesystem repair.
+
+### Three native target userspaces
+
+| Target | Linux reference model | Koronos entry artifact | Current verified scope | Remaining production work |
+|---|---|---|---|---|
+| Live | initramfs `/init`, systemd/sysvinit service graph, udev/device discovery, display manager | `target-init-live.elf`, Live initramfs and Live manifest | Native ELF enters ring 3, performs DPL3 syscall acknowledgement, emits Live readiness, exits cleanly in QEMU target tests | Real root/runtime activation, device discovery, network/audio/storage services, compositor/X server, login/session and app launch |
+| Installer | Anaconda, Debian Installer, Subiquity/ curtin style installer environment | `target-init-installer.elf`, installation image, manifest and installer contracts | Native ELF handoff and installer target readiness verified; current implementation is a dry-run storage plan | Partition discovery, explicit destructive-operation confirmation, GPT/MBR handling, filesystem creation, block-device writes, bootloader install, rollback and post-install boot test |
+| Recovery | initramfs emergency shell, systemd rescue/emergency targets, fsck and recovery utilities | `target-init-recovery.elf`, Recovery initramfs and manifest | Native ELF handoff and recovery readiness verified; current implementation reports diagnostics | Real read-only-first volume discovery, filesystem-specific repair tools, repair logs, backup/rollback safeguards and damaged-image tests |
+
+### Linux userspace layers to Koronos userspace services
+
+| Linux userspace layer | Linux examples | Koronos service/API destination | Implementation status rule |
+|---|---|---|---|
+| Init and service supervision | systemd, OpenRC, SysV init | Kore service manager, dependency graph and target units | A mapped service name is not a running service; require start/health/stop tests |
+| Device management | udev, eudev, mdev | Koronos device manager and driver-event broker | Require real device enumeration and hotplug tests |
+| Storage and mounts | util-linux, mount, blkid, udisks2 | VFS, block layer, filesystem drivers and mount service | Require actual block-device and filesystem integration tests |
+| Networking | iproute2, NetworkManager, systemd-networkd, wpa_supplicant | Spotnik networking stack and network service adapters | Require link, DHCP/static config, DNS and packet tests |
+| Logging and diagnostics | journald, rsyslog, dmesg, procps | Koronos event log, kernel trace, process and diagnostics services | Require persistent log and process introspection tests |
+| Security | PAM, polkit, auditd, SELinux/AppArmor | Aegis policy, authentication and audit services | Require enforced policy tests; catalogue references alone are not enforcement |
+| Desktop/display | Wayland compositors, Xorg, display managers | Native Koronos display server, compositor and session manager | Require native protocol and real session tests; host previews are not native compositor proof |
+| Shell and commands | coreutils, Bash, GNU utilities, BSD userland | Koronos command registry, native providers and compatibility adapters | Track each command, option, architecture, provider provenance and test result independently |
+| Databases | SQLite, PostgreSQL, MariaDB, Redis, DuckDB and others | Native packages or explicitly hosted provider services | Require license/source provenance, architecture build, persistent storage and SQL/protocol tests |
+
+### Linux-hosted Koronos boundary
+
+The LinuxKoronos executable is a Linux-hosted process adapter. It uses Linux host facilities (including process creation and host command execution) and exposes a Koronos-oriented interface. It is not a replacement for the native Koronos kernel, does not boot as PID 1, and does not claim to implement the three native boot targets. Keep host-adapter CI results separate from native-kernel, installer, recovery, desktop and device acceptance results.
+
+### Acceptance evidence checklist
+
+- [ ] Kernel and bootloader artifacts validated for the target architecture.
+- [ ] Exactly one selected native init ELF, with explicit target identity and bounded module metadata.
+- [ ] ELF admission, address-space ownership and CPL3 entry validated.
+- [ ] DPL3 syscall acknowledgement and target-specific readiness marker tied to the active PID.
+- [ ] Target init completes root/runtime activation and service startup (not merely prints readiness).
+- [ ] Live reaches a real login/session and launches the selected desktop.
+- [ ] Installer writes to a disposable virtual disk and the resulting disk boots.
+- [ ] Recovery repairs deliberately damaged disposable filesystem images and records its actions.
+- [ ] BIOS and UEFI traces are retained with exact source revision, ISO digest and toolchain metadata.
+
+A checkmark in an upstream CI job should be interpreted only against the tests actually run. Never promote the narrow ring-3 handshake to full userspace or release acceptance.
