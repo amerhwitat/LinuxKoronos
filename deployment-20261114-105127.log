@@ -1,0 +1,7 @@
+[0;34m[2026-11-14 10:56:18][0m Repository: LinuxKoronos
+[0;34m[2026-11-14 10:56:18][0m Branch: main
+[0;34m[2026-11-14 10:56:18][0m Adding Docker files...
+[0;34m[2026-11-14 10:56:18][0m x86_64 Dockerfile already exists
+[0;34m[2026-11-14 10:56:18][0m ARM64 Dockerfile already exists
+[0;34m[2026-11-14 10:56:18][0m Docker Compose already exists
+[0;34m[2026-11-14 10:56:18][0m .dockerignore already exists
