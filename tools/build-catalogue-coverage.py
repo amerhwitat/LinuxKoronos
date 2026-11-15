@@ -48,6 +48,13 @@ def build(catalog: dict, curated: dict) -> dict:
     # object for a list of commands.
     groups = []
     platforms = catalog.get("platforms", {})
+    category_platform = {
+        "macos_core": "macos",
+        "windows_cmd_core": "windows_cmd",
+        "powershell_core": "powershell",
+        "vbscript_core": "vbscript",
+        "sql_server_core": "sql_server",
+    }
     if isinstance(platforms, dict) and any(
         isinstance(group, dict) and isinstance(group.get("commands"), list)
         for group in platforms.values()
@@ -60,7 +67,7 @@ def build(catalog: dict, curated: dict) -> dict:
             if category == "sources" or not isinstance(values, list):
                 continue
             if values and all(isinstance(value, str) for value in values):
-                groups.append((category, values, platforms.get(category, {})))
+                groups.append((category, values, platforms.get(category, platforms.get(category_platform.get(category, ""), {}))))
     if not groups:
         raise ValueError("catalogue has no supported command category arrays")
 
