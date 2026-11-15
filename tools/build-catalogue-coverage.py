@@ -23,6 +23,14 @@ ENTRY_CLASSES = {
     "sql_server": "sql-server-language-api",
     "access": "microsoft-access-language-api",
     "tools": "tool-or-general-reference",
+    "linux_bash": "bash-command-or-reference",
+    "macos_core": "macos-command-or-reference",
+    "windows_cmd_core": "windows-cmd-command-or-reference",
+    "powershell_core": "powershell-command-or-reference",
+    "vbscript_core": "vbscript-language-api",
+    "sql_server_core": "sql-server-language-api",
+    "native_chimera": "native-chimera-command-or-reference",
+    "compatibility_commands": "compatibility-command-or-reference",
 }
 
 def load(path: Path):
