@@ -9,6 +9,7 @@ SPEC = importlib.util.spec_from_file_location(
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
+
 class CatalogueCoverageTests(unittest.TestCase):
     def test_every_source_row_is_retained_and_unknown_is_not_guessed(self):
         catalogue = {
@@ -42,6 +43,34 @@ class CatalogueCoverageTests(unittest.TestCase):
         self.assertEqual(result["entries"][2]["entry_class"], "sql-server-language-api")
         self.assertEqual(result["entries"][2]["execution_status"], "not-built-or-runtime-verified")
 
+    def test_current_chimera_command_list_schema_is_supported(self):
+        catalogue = {
+            "schema_version": "3.0",
+            "platforms": {
+                "linux_bash": {"index": "https://ss64.com/bash/", "role": "Linux shell"},
+                "macos_core": {"index": "https://ss64.com/mac/", "role": "macOS commands"},
+            },
+            "linux_bash": ["ls", "unknown"],
+            "macos_core": ["open"],
+            "sources": ["https://ss64.com/"],
+        }
+        curated = {
+            "schema": "koronos-command-cross-platform-map/v1",
+            "commands": [{
+                "command": "ls",
+                "linux": {"name": "ls", "provider": "host-detect"},
+                "windows": {"name": "Get-ChildItem", "provider": "host-detect"},
+                "macos": {"name": "ls", "provider": "host-detect"},
+                "options_compatibility": "not-assumed",
+            }],
+        }
+        result = MODULE.build(catalogue, curated)
+        self.assertEqual(result["totals"]["entries"], 3)
+        self.assertEqual(result["entries"][0]["source_url"], "https://ss64.com/bash/")
+        self.assertEqual(result["entries"][0]["cross_platform_mapping_status"], "curated-candidate")
+        self.assertEqual(result["entries"][1]["cross_platform_mapping_status"], "unmapped-needs-research")
+        self.assertEqual(result["entries"][2]["entry_class"], "unclassified")
+
     def test_duplicate_source_names_keep_stable_distinct_ids(self):
         catalogue = {"platforms": {"macos": {"commands": [
             {"name": "open"}, {"name": "open"}
@@ -49,6 +78,7 @@ class CatalogueCoverageTests(unittest.TestCase):
         curated = {"schema": "koronos-command-cross-platform-map/v1", "commands": []}
         result = MODULE.build(catalogue, curated)
         self.assertEqual([x["id"] for x in result["entries"]], ["macos:1", "macos:2"])
+
 
 if __name__ == "__main__":
     unittest.main()
