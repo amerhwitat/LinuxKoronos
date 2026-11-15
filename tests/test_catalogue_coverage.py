@@ -79,6 +79,32 @@ class CatalogueCoverageTests(unittest.TestCase):
         result = MODULE.build(catalogue, curated)
         self.assertEqual([x["id"] for x in result["entries"]], ["macos:1", "macos:2"])
 
+    def test_generated_inventory_is_nonempty_lossless_and_honest(self):
+        import json
+        generated = json.loads(
+            (ROOT / "config" / "full-command-catalogue-coverage.json").read_text(encoding="utf-8")
+        )
+        totals = generated["totals"]
+        entries = generated["entries"]
+        self.assertGreater(len(entries), 0)
+        self.assertEqual(totals["entries"], len(entries))
+        self.assertEqual(sum(totals["category_counts"].values()), len(entries))
+        self.assertEqual(
+            totals["mapped_catalogue_rows"] + totals["unmapped_catalogue_rows"],
+            len(entries),
+        )
+        ids = [entry["id"] for entry in entries]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(all(
+            entry["execution_status"] == "not-built-or-runtime-verified"
+            for entry in entries
+        ))
+        self.assertTrue(all(
+            entry["equivalents"] is None
+            for entry in entries
+            if entry["cross_platform_mapping_status"] == "unmapped-needs-research"
+        ))
+
 
 if __name__ == "__main__":
     unittest.main()
