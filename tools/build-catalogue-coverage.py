@@ -30,27 +30,56 @@ def load(path: Path):
         return json.load(stream)
 
 def build(catalog: dict, curated: dict) -> dict:
-    if "platforms" not in catalog or not isinstance(catalog["platforms"], dict):
-        raise ValueError("catalogue has no platforms object")
     if curated.get("schema") != "koronos-command-cross-platform-map/v1":
         raise ValueError("unsupported curated map schema")
     by_name = {row["command"].casefold(): row for row in curated["commands"]}
+
+    # Support both the newer platform.{category}.commands source and the
+    # repository's current SS64-derived schema, which stores category arrays
+    # directly at the document root. Never mistake the platform metadata
+    # object for a list of commands.
+    groups = []
+    platforms = catalog.get("platforms", {})
+    if isinstance(platforms, dict) and any(
+        isinstance(group, dict) and isinstance(group.get("commands"), list)
+        for group in platforms.values()
+    ):
+        for category, group in platforms.items():
+            if isinstance(group, dict) and isinstance(group.get("commands"), list):
+                groups.append((category, group["commands"], group))
+    else:
+        for category, values in catalog.items():
+            if category == "sources" or not isinstance(values, list):
+                continue
+            if values and all(isinstance(value, str) for value in values):
+                groups.append((category, values, platforms.get(category, {})))
+    if not groups:
+        raise ValueError("catalogue has no supported command category arrays")
+
     entries = []
     category_counts = {}
-    for category, group in catalog["platforms"].items():
-        commands = group.get("commands", [])
+    for category, commands, metadata in groups:
         category_counts[category] = len(commands)
         for index, item in enumerate(commands, 1):
-            name = str(item.get("name", ""))
+            if isinstance(item, dict):
+                name = str(item.get("name", ""))
+                source_url = item.get("source") or metadata.get("index")
+                source_kind = item.get("source_kind") or metadata.get("role")
+                provider_status = item.get("provider_status", "not-specified")
+            else:
+                name = str(item)
+                source_url = metadata.get("index")
+                source_kind = metadata.get("role", "catalogue-name-only")
+                provider_status = "not-specified"
             mapping = by_name.get(name.casefold())
             entries.append({
                 "id": f"{category}:{index}",
                 "name": name,
                 "source_category": category,
                 "entry_class": ENTRY_CLASSES.get(category, "unclassified"),
-                "source_url": item.get("source"),
-                "source_kind": item.get("source_kind"),
-                "catalogue_provider_status": item.get("provider_status", "not-specified"),
+                "source_url": source_url,
+                "source_kind": source_kind,
+                "catalogue_provider_status": provider_status,
                 "cross_platform_mapping_status": "curated-candidate" if mapping else "unmapped-needs-research",
                 "equivalents": ({p: mapping[p] for p in ("linux", "windows", "macos")} if mapping else None),
                 "options_compatibility": mapping.get("options_compatibility", "not-assessed") if mapping else "not-assessed",
@@ -61,6 +90,7 @@ def build(catalog: dict, curated: dict) -> dict:
         "schema": "koronos-full-command-catalogue-coverage/v1",
         "source_schema": catalog.get("schema_version"),
         "source_generated_at_utc": catalog.get("generated_at_utc"),
+        "source_file_categories": list(category_counts),
         "policy": "Inventory is exhaustive for the supplied source file. Candidate mappings do not assert option/semantic compatibility or binary availability.",
         "totals": {
             "entries": len(entries),
