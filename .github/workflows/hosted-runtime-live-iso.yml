@@ -93,12 +93,12 @@ jobs:
           # Ubuntu's packaged live-build still requests the obsolete distribution-root URL.
           helper=/usr/lib/live/build/lb_chroot_linux-image
           test -f "$helper"
-          grep -Fq '/dists/\${LB_DISTRIBUTION}/Contents-' "$helper"
+          grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "$helper"
           sudo sed -i \\
-            -e 's@/dists/\${LB_PARENT_DISTRIBUTION}/Contents-@/dists/\${LB_PARENT_DISTRIBUTION}/main/Contents-@g' \\
-            -e 's@/dists/\${LB_DISTRIBUTION}/Contents-@/dists/\${LB_DISTRIBUTION}/main/Contents-@g' \\
+            -e 's@/dists/${LB_PARENT_DISTRIBUTION}/Contents-@/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-@g' \\
+            -e 's@/dists/${LB_DISTRIBUTION}/Contents-@/dists/${LB_DISTRIBUTION}/main/Contents-@g' \\
             "$helper"
-          grep -Fq '/dists/\${LB_DISTRIBUTION}/main/Contents-' "$helper"
+          grep -Fq '/dists/${LB_DISTRIBUTION}/main/Contents-' "$helper"
           sudo lb build
 
       - name: Verify ISO and generate checksum
