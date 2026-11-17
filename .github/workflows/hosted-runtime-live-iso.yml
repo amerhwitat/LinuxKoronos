@@ -1,0 +1,84 @@
+name: Build LinuxKoronos hosted-runtime live ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "CMakeLists.txt"
+      - "tests/**"
+      - "tools/package-linux.sh"
+      - ".github/workflows/hosted-runtime-live-iso.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linuxkoronos-live-iso-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build and live-media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso
+
+      - name: Build and test the Linux-hosted Koronos runtime
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+          bash tests/smoke.sh ./build/koronos-host
+
+      - name: Prepare Debian live image with the hosted runtime
+        run: |
+          set -euo pipefail
+          mkdir -p config/includes.chroot/usr/local/bin
+          install -m 0755 build/koronos-host config/includes.chroot/usr/local/bin/koronos-host
+          mkdir -p config/includes.chroot/usr/share/doc/linuxkoronos
+          install -m 0644 README.md LICENSE config/includes.chroot/usr/share/doc/linuxkoronos/
+          cat > config/includes.chroot/usr/share/doc/linuxkoronos/IMAGE-BOUNDARY.txt <<'EOF'
+          LinuxKoronos hosted-runtime live image
+          Linux is the booted kernel and provides scheduling, memory, filesystems,
+          networking and device drivers. koronos-host is an unprivileged hosted
+          process adapter. This image is not a freestanding Koronos kernel,
+          native Live/Installer/Recovery system, or mobile flash image.
+          Run: koronos-host info
+               koronos-host profile
+               koronos-host run -- /usr/bin/id -u
+          EOF
+          lb config \
+            --distribution bookworm \
+            --architectures amd64 \
+            --binary-images iso-hybrid \
+            --archive-areas "main" \
+            --bootappend-live "boot=live components quiet"
+          sudo lb build
+
+      - name: Verify ISO and generate checksum
+        run: |
+          set -euo pipefail
+          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
+          test -n "$iso"
+          test -s "$iso"
+          file "$iso"
+          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
+          cp "$iso" linuxkoronos-hosted-live-amd64.iso
+
+      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
+          path: |
+            linuxkoronos-hosted-live-amd64.iso
+            linuxkoronos-hosted-live-amd64.iso.sha256
+          if-no-files-found: error
+          retention-days: 30
