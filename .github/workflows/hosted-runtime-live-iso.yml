@@ -37,7 +37,7 @@ jobs:
       - name: Install build and live-media tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring
+          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common
 
       - name: Build and test the Linux-hosted Koronos runtime
         run: |
@@ -96,6 +96,59 @@ jobs:
           grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "$helper"
           sudo sed -i -e 's@/dists/${LB_PARENT_DISTRIBUTION}/Contents-@/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-@g' -e 's@/dists/${LB_DISTRIBUTION}/Contents-@/dists/${LB_DISTRIBUTION}/main/Contents-@g' "$helper"
           grep -Fq '/dists/${LB_DISTRIBUTION}/main/Contents-' "$helper"
+          sudo lb build
+          # live-build's syslinux stage expects the BIOS bootloader files at
+          # /root/isolinux, but Ubuntu/Debian packages install them under /usr/lib.
+          # Populate the documented live-build staging directory from package-owned files.
+          sudo install -d /root/isolinux
+          isolinux_bin="$(dpkg -L isolinux | grep -m1 '/isolinux\.bin
+
+      - name: Verify ISO and generate checksum
+        run: |
+          set -euo pipefail
+          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
+          test -n "$iso"
+          test -s "$iso"
+          file "$iso"
+          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
+          cp "$iso" linuxkoronos-hosted-live-amd64.iso
+
+      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
+          path: |
+            linuxkoronos-hosted-live-amd64.iso
+            linuxkoronos-hosted-live-amd64.iso.sha256
+          if-no-files-found: error
+          retention-days: 30
+)"
+          vesamenu_mod="$(dpkg -L syslinux-common | grep -m1 '/vesamenu\.c32
+
+      - name: Verify ISO and generate checksum
+        run: |
+          set -euo pipefail
+          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
+          test -n "$iso"
+          test -s "$iso"
+          file "$iso"
+          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
+          cp "$iso" linuxkoronos-hosted-live-amd64.iso
+
+      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
+          path: |
+            linuxkoronos-hosted-live-amd64.iso
+            linuxkoronos-hosted-live-amd64.iso.sha256
+          if-no-files-found: error
+          retention-days: 30
+)"
+          test -s "$isolinux_bin"
+          test -s "$vesamenu_mod"
+          sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
+          sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
           sudo lb build
 
       - name: Verify ISO and generate checksum
