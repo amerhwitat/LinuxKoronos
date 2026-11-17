@@ -107,7 +107,18 @@ jobs:
           sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
           sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
           sha256sum "$isolinux_bin" "$vesamenu_mod" | tee boot-assets.sha256
-          sudo lb build
+          # Run live-build in explicit phases. Its bootstrap/chroot stages may
+          # clean transient root-level bootloader staging; therefore restore the
+          # vendor assets immediately before the binary stage that consumes them.
+          sudo lb bootstrap
+          sudo lb chroot
+          sudo install -d /root/isolinux
+          sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
+          sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
+          sudo test -s /root/isolinux/isolinux.bin
+          sudo test -s /root/isolinux/vesamenu.c32
+          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32
+          sudo lb binary
 
       - name: Verify ISO and generate checksum
         run: |
