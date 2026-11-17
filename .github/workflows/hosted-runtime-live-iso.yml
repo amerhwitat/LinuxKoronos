@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: linuxkoronos-live-iso-${{ github.ref }}
+  group: linuxkoronos-live-iso-\${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -63,10 +63,6 @@ jobs:
                koronos-host profile
                koronos-host run -- /usr/bin/id -u
           EOF
-          # Bookworm uses the "bookworm-security" suite, not the obsolete
-          # "bookworm/updates" path emitted by this live-build version's
-          # default security-source template. Disable that template and add
-          # the current signed suite explicitly for both build and final image.
           mkdir -p config/archives
           cat > config/archives/security.list.chroot <<'APT'
           deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
@@ -74,8 +70,8 @@ jobs:
           cat > config/archives/security.list.binary <<'APT'
           deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
           APT
-          lb config  \
-            --mode debian  \
+          lb config \
+            --mode debian \
             --distribution bookworm \
             --parent-distribution bookworm \
             --architectures amd64 \
@@ -89,64 +85,18 @@ jobs:
             --mirror-binary-security http://security.debian.org/debian-security \
             --syslinux-theme live-build \
             --bootappend-live "boot=live components quiet"
-          # Debian Bookworm moved Contents indexes beneath each archive area.
-          # Ubuntu's packaged live-build still requests the obsolete distribution-root URL.
           helper=/usr/lib/live/build/lb_chroot_linux-image
           test -f "$helper"
-          grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "$helper"
-          sudo sed -i -e 's@/dists/${LB_PARENT_DISTRIBUTION}/Contents-@/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-@g' -e 's@/dists/${LB_DISTRIBUTION}/Contents-@/dists/${LB_DISTRIBUTION}/main/Contents-@g' "$helper"
-          grep -Fq '/dists/${LB_DISTRIBUTION}/main/Contents-' "$helper"
-          sudo lb build
-          # live-build's syslinux stage expects the BIOS bootloader files at
-          # /root/isolinux, but Ubuntu/Debian packages install them under /usr/lib.
-          # Populate the documented live-build staging directory from package-owned files.
+          grep -Fq '/dists/\${LB_DISTRIBUTION}/Contents-' "$helper"
+          sudo sed -i -e 's@/dists/\${LB_PARENT_DISTRIBUTION}/Contents-@/dists/\${LB_PARENT_DISTRIBUTION}/main/Contents-@g' -e 's@/dists/\${LB_DISTRIBUTION}/Contents-@/dists/\${LB_DISTRIBUTION}/main/Contents-@g' "$helper"
+          grep -Fq '/dists/\${LB_DISTRIBUTION}/main/Contents-' "$helper"
+          # Ubuntu/Debian packages install the BIOS boot files under /usr/lib;
+          # this live-build version expects them in /root/isolinux.
+          isolinux_bin="$(find /usr/lib -type f -name isolinux.bin -print -quit)"
+          vesamenu_mod="$(find /usr/lib -type f -name vesamenu.c32 -print -quit)"
+          test -n "$isolinux_bin" && test -s "$isolinux_bin"
+          test -n "$vesamenu_mod" && test -s "$vesamenu_mod"
           sudo install -d /root/isolinux
-          isolinux_bin="$(dpkg -L isolinux | grep -m1 '/isolinux\.bin
-
-      - name: Verify ISO and generate checksum
-        run: |
-          set -euo pipefail
-          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
-          test -n "$iso"
-          test -s "$iso"
-          file "$iso"
-          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
-          cp "$iso" linuxkoronos-hosted-live-amd64.iso
-
-      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
-        uses: actions/upload-artifact@v4
-        with:
-          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
-          path: |
-            linuxkoronos-hosted-live-amd64.iso
-            linuxkoronos-hosted-live-amd64.iso.sha256
-          if-no-files-found: error
-          retention-days: 30
-)"
-          vesamenu_mod="$(dpkg -L syslinux-common | grep -m1 '/vesamenu\.c32
-
-      - name: Verify ISO and generate checksum
-        run: |
-          set -euo pipefail
-          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
-          test -n "$iso"
-          test -s "$iso"
-          file "$iso"
-          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
-          cp "$iso" linuxkoronos-hosted-live-amd64.iso
-
-      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
-        uses: actions/upload-artifact@v4
-        with:
-          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
-          path: |
-            linuxkoronos-hosted-live-amd64.iso
-            linuxkoronos-hosted-live-amd64.iso.sha256
-          if-no-files-found: error
-          retention-days: 30
-)"
-          test -s "$isolinux_bin"
-          test -s "$vesamenu_mod"
           sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
           sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
           sudo lb build
@@ -164,7 +114,7 @@ jobs:
       - name: Upload hosted-runtime ISO (not a native Koronos OS release)
         uses: actions/upload-artifact@v4
         with:
-          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
+          name: linuxkoronos-hosted-live-amd64-\${{ github.sha }}
           path: |
             linuxkoronos-hosted-live-amd64.iso
             linuxkoronos-hosted-live-amd64.iso.sha256
