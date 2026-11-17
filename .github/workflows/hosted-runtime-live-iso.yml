@@ -90,15 +90,23 @@ jobs:
           grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "$helper"
           sudo sed -i -e 's@/dists/${LB_PARENT_DISTRIBUTION}/Contents-@/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-@g' -e 's@/dists/${LB_DISTRIBUTION}/Contents-@/dists/${LB_DISTRIBUTION}/main/Contents-@g' "$helper"
           grep -Fq '/dists/${LB_DISTRIBUTION}/main/Contents-' "$helper"
-          # Ubuntu/Debian packages install the BIOS boot files under /usr/lib;
-          # this live-build version expects them in /root/isolinux.
-          isolinux_bin="$(find /usr/lib -type f -name isolinux.bin -print -quit)"
-          vesamenu_mod="$(find /usr/lib -type f -name vesamenu.c32 -print -quit)"
+          # Fetch the official Ubuntu archive packages directly, extract their
+          # vendor-provided BIOS boot assets, and stage the exact filenames that
+          # this live-build version looks for. No third-party mirrors or binaries.
+          boot_pkg_dir="$(mktemp -d)"
+          mkdir -p "$boot_pkg_dir/extracted"
+          (cd "$boot_pkg_dir" && apt-get download isolinux syslinux-common)
+          for deb in "$boot_pkg_dir"/*.deb; do
+            dpkg-deb -x "$deb" "$boot_pkg_dir/extracted"
+          done
+          isolinux_bin="$(find "$boot_pkg_dir/extracted" -type f -name isolinux.bin -print -quit)"
+          vesamenu_mod="$(find "$boot_pkg_dir/extracted" -type f -name vesamenu.c32 -print -quit)"
           test -n "$isolinux_bin" && test -s "$isolinux_bin"
           test -n "$vesamenu_mod" && test -s "$vesamenu_mod"
           sudo install -d /root/isolinux
           sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
           sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
+          sha256sum "$isolinux_bin" "$vesamenu_mod" | tee boot-assets.sha256
           sudo lb build
 
       - name: Verify ISO and generate checksum
