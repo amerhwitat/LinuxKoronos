@@ -74,8 +74,8 @@ jobs:
           cat > config/archives/security.list.binary <<'APT'
           deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
           APT
-          lb config \\
-            --mode debian \\
+          lb config  \
+            --mode debian  \
             --distribution bookworm \
             --parent-distribution bookworm \
             --architectures amd64 \
@@ -87,7 +87,6 @@ jobs:
             --security false \
             --mirror-chroot-security http://security.debian.org/debian-security \
             --mirror-binary-security http://security.debian.org/debian-security \
-            --security false \
             --syslinux-theme live-build \
             --bootappend-live "boot=live components quiet"
           sudo lb build
