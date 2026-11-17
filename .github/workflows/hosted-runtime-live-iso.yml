@@ -87,6 +87,7 @@ jobs:
             --security false \
             --mirror-chroot-security http://security.debian.org/debian-security \
             --mirror-binary-security http://security.debian.org/debian-security \
+            --security false \
             --syslinux-theme live-build \
             --bootappend-live "boot=live components quiet"
           sudo lb build
