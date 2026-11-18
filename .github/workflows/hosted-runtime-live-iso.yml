@@ -125,7 +125,10 @@ jobs:
           stage_isolinux_assets
           sudo lb chroot
           stage_isolinux_assets
-          sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32
+          # /root is intentionally not traversable by the unprivileged runner;
+          # hash the root-owned staging files with sudo, while keeping the
+          # checksum report in the workspace for artifact/debug visibility.
+          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
           sudo lb binary
 
       - name: Verify ISO and generate checksum
