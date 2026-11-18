@@ -38,6 +38,26 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common
+          # Debian's ImageMagick/live-build SVG theme path still invokes the
+          # legacy `rsvg INPUT OUTPUT` interface. Bookworm ships
+          # `rsvg-convert` instead, so provide a narrow compatibility shim.
+          sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
+          #!/bin/sh
+          set -eu
+          if [ "$#" -ne 2 ]; then
+            echo "usage: rsvg INPUT.svg OUTPUT" >&2
+            exit 2
+          fi
+          exec /usr/bin/rsvg-convert -o "$2" "$1"
+          RSVG
+          sudo chmod 0755 /usr/local/bin/rsvg
+          test -x /usr/local/bin/rsvg
+          test -x /usr/bin/rsvg-convert
+          cat > "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.svg" <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#204080"/></svg>
+          SVG
+          /usr/local/bin/rsvg "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.svg" "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.png"
+          test -s "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.png"
 
       - name: Build and test the Linux-hosted Koronos runtime
         run: |
