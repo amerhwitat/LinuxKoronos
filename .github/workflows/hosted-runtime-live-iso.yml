@@ -103,21 +103,23 @@ jobs:
           vesamenu_mod="$(find "$boot_pkg_dir/extracted" -type f -name vesamenu.c32 -print -quit)"
           test -n "$isolinux_bin" && test -s "$isolinux_bin"
           test -n "$vesamenu_mod" && test -s "$vesamenu_mod"
-          sudo install -d /root/isolinux
-          sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
-          sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
-          sha256sum "$isolinux_bin" "$vesamenu_mod" | tee boot-assets.sha256
-          # Run live-build in explicit phases. Its bootstrap/chroot stages may
-          # clean transient root-level bootloader staging; therefore restore the
-          # vendor assets immediately before the binary stage that consumes them.
+          # live-build reads custom ISOLINUX files from the project config
+          # directory (config/bootloaders/isolinux), not /root/isolinux.
+          # Seed the complete vendor theme so its menu modules/config remain
+          # version-matched, then replace the two boot assets with the exact
+          # packages downloaded above.
+          mkdir -p config/bootloaders/isolinux
+          cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
+          install -m 0644 "$isolinux_bin" config/bootloaders/isolinux/isolinux.bin
+          install -m 0644 "$vesamenu_mod" config/bootloaders/isolinux/vesamenu.c32
+          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 | tee boot-assets.sha256
+          # Run live-build in explicit phases. The project-local bootloader
+          # override survives these phases and is consumed by the binary stage.
           sudo lb bootstrap
           sudo lb chroot
-          sudo install -d /root/isolinux
-          sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
-          sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
-          sudo test -s /root/isolinux/isolinux.bin
-          sudo test -s /root/isolinux/vesamenu.c32
-          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32
+          test -s config/bootloaders/isolinux/isolinux.bin
+          test -s config/bootloaders/isolinux/vesamenu.c32
+          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32
           sudo lb binary
 
       - name: Verify ISO and generate checksum
