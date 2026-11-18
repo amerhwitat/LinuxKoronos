@@ -71,6 +71,20 @@ jobs:
           set -euo pipefail
           mkdir -p config/includes.chroot/usr/local/bin
           install -m 0755 build/koronos-host config/includes.chroot/usr/local/bin/koronos-host
+          # live-build invokes SVG conversion inside its chroot as well as on
+          # the host. The host shim above is not visible in that namespace.
+          mkdir -p config/chroot_local-includes/usr/local/bin config/package-lists
+          cat > config/chroot_local-includes/usr/local/bin/rsvg <<'RSVG'
+          #!/bin/sh
+          set -eu
+          if [ "$#" -ne 2 ]; then
+            echo "usage: rsvg INPUT.svg OUTPUT" >&2
+            exit 2
+          fi
+          exec /usr/bin/rsvg-convert -o "$2" "$1"
+          RSVG
+          chmod 0755 config/chroot_local-includes/usr/local/bin/rsvg
+          printf '%s\\n' librsvg2-bin > config/package-lists/linuxkoronos-svg.list.chroot
           mkdir -p config/includes.chroot/usr/share/doc/linuxkoronos
           install -m 0644 README.md LICENSE config/includes.chroot/usr/share/doc/linuxkoronos/
           cat > config/includes.chroot/usr/share/doc/linuxkoronos/IMAGE-BOUNDARY.txt <<'EOF'
