@@ -41,6 +41,18 @@ jobs:
           sudo apt-get install -y \
             cmake g++ make live-build debootstrap squashfs-tools \
             xorriso debian-archive-keyring isolinux syslinux-common
+          # live-build's BIOS bootloader stage expects these files under
+          # /root/isolinux on this runner; Debian packages install them under
+          # /usr/lib. Resolve package-owned paths and stage them explicitly.
+          sudo bash -euo pipefail -c '
+            isolinux_bin="$(dpkg -L isolinux | grep -E "/isolinux\\.bin$" | head -n 1)"
+            vesamenu="$(dpkg -L syslinux-common | grep -E "/vesamenu\\.c32$" | head -n 1)"
+            test -n "$isolinux_bin" && test -s "$isolinux_bin"
+            test -n "$vesamenu" && test -s "$vesamenu"
+            install -D -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
+            install -D -m 0644 "$vesamenu" /root/isolinux/vesamenu.c32
+            ls -l /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32
+          '
 
       - name: Build and test Linux-hosted Koronos runtime
         run: |
