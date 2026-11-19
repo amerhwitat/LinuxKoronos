@@ -173,7 +173,18 @@ jobs:
             test -s "$splash_png"
             rm -f "$splash_svg"
           fi
-          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 | tee boot-assets.sha256
+          # live-build's legacy Syslinux theme helper may pass every SVG in
+          # the theme directory to rsvg-convert in one invocation. Modern
+          # librsvg rejects multiple SVG inputs for PNG output. The splash is
+          # already rendered above, so remove all remaining SVG sources from
+          # this staged theme; keep the raster artwork and boot modules.
+          find config/bootloaders/isolinux -type f -name '*.svg' -delete
+          if find config/bootloaders/isolinux -type f -name '*.svg' -print -quit | grep -q .; then
+            echo "::error::Unrendered SVG remains in the Syslinux theme"
+            exit 1
+          fi
+          test -s "$splash_png"
+          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 "$splash_png" | tee boot-assets.sha256
           # Keep the required vendor files available to each live-build phase.
           sudo env "PATH=/usr/local/bin:$PATH" lb bootstrap
           stage_isolinux_assets
