@@ -40,7 +40,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             cmake g++ make live-build debootstrap squashfs-tools \
-            xorriso debian-archive-keyring
+            xorriso debian-archive-keyring isolinux syslinux-common
 
       - name: Build and test Linux-hosted Koronos runtime
         run: |
