@@ -172,7 +172,9 @@ jobs:
           # hash the root-owned staging files with sudo, while keeping the
           # checksum report in the workspace for artifact/debug visibility.
           sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
-          sudo env "PATH=/usr/local/bin:$PATH" lb binary
+          # Trace the live-build syslinux/theme conversion path so failures identify the exact
+          # rsvg-convert argv rather than only reporting librsvg's generic multi-input error.
+          sudo env "PATH=/usr/local/bin:$PATH" bash -x /usr/bin/lb binary
 
       - name: Verify ISO and generate checksum
         run: |
