@@ -44,11 +44,15 @@ jobs:
           sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
           #!/bin/sh
           set -eu
-          if [ "$#" -ne 2 ]; then
-            echo "usage: rsvg INPUT.svg OUTPUT" >&2
-            exit 2
+          # Preserve the old two-positional-argument form, but pass
+          # rsvg-convert options (for example --version/--help) through.
+          # Debian live-build invokes the renderer in both conversion and
+          # capability-probe contexts; rejecting every non-two-argument call
+          # aborts lb binary while installing the bootloader packages.
+          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
+            exec /usr/bin/rsvg-convert -o "$2" "$1"
           fi
-          exec /usr/bin/rsvg-convert -o "$2" "$1"
+          exec /usr/bin/rsvg-convert "$@"
           RSVG
           sudo chmod 0755 /usr/local/bin/rsvg
           test -x /usr/local/bin/rsvg
@@ -77,11 +81,15 @@ jobs:
           cat > config/includes.chroot/usr/local/bin/rsvg <<'RSVG'
           #!/bin/sh
           set -eu
-          if [ "$#" -ne 2 ]; then
-            echo "usage: rsvg INPUT.svg OUTPUT" >&2
-            exit 2
+          # Preserve the old two-positional-argument form, but pass
+          # rsvg-convert options (for example --version/--help) through.
+          # Debian live-build invokes the renderer in both conversion and
+          # capability-probe contexts; rejecting every non-two-argument call
+          # aborts lb binary while installing the bootloader packages.
+          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
+            exec /usr/bin/rsvg-convert -o "$2" "$1"
           fi
-          exec /usr/bin/rsvg-convert -o "$2" "$1"
+          exec /usr/bin/rsvg-convert "$@"
           RSVG
           chmod 0755 config/includes.chroot/usr/local/bin/rsvg
           test -x config/includes.chroot/usr/local/bin/rsvg
