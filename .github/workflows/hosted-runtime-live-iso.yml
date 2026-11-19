@@ -76,6 +76,11 @@ jobs:
           systemd-sysv
           ca-certificates
           network-manager
+          # live-build's chroot bootloader stage links these package-owned
+          # BIOS modules from /root/isolinux; host installation alone is
+          # insufficient because the links are resolved inside the chroot.
+          isolinux
+          syslinux-common
           PACKAGES
           install -m 0644 README.md LICENSE \
             config/includes.chroot/usr/share/doc/linuxkoronos/
