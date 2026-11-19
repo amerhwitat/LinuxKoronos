@@ -172,9 +172,12 @@ jobs:
           # hash the root-owned staging files with sudo, while keeping the
           # checksum report in the workspace for artifact/debug visibility.
           sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
-          # Trace the live-build syslinux/theme conversion path so failures identify the exact
-          # rsvg-convert argv rather than only reporting librsvg's generic multi-input error.
-          sudo env "PATH=/usr/local/bin:$PATH" bash -x /usr/bin/lb binary
+          # Invoke Debian live-build through its supported entry point. Running
+          # the wrapper via "bash -x /usr/bin/lb" changes its bootstrap context
+          # and caused it to source /scripts/build.sh without the live-build
+          # helper functions (Echo: command not found). The rsvg compatibility
+          # shim is already smoke-tested above and installed in the chroot.
+          sudo env "PATH=/usr/local/bin:$PATH" lb binary
 
       - name: Verify ISO and generate checksum
         run: |
