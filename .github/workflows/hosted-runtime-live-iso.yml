@@ -1,0 +1,138 @@
+name: Build LinuxKoronos hosted-runtime live ISO
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/**"
+      - "include/**"
+      - "CMakeLists.txt"
+      - "tests/**"
+      - "tools/package-linux.sh"
+      - ".github/workflows/hosted-runtime-live-iso.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "include/**"
+      - "CMakeLists.txt"
+      - "tests/**"
+      - "tools/package-linux.sh"
+      - ".github/workflows/hosted-runtime-live-iso.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linuxkoronos-live-iso-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install live-image build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake g++ make live-build debootstrap squashfs-tools \
+            xorriso debian-archive-keyring isolinux syslinux-common
+          # Stage package-owned BIOS modules without sudo so the following
+          # unprivileged configuration step can write into includes.chroot.
+          bash -euo pipefail -c '
+            isolinux_bin="$(dpkg -L isolinux | grep -E "/isolinux\\.bin$" | head -n 1)"
+            vesamenu="$(dpkg -L syslinux-common | grep -E "/vesamenu\\.c32$" | head -n 1)"
+            test -n "$isolinux_bin" && test -s "$isolinux_bin"
+            test -n "$vesamenu" && test -s "$vesamenu"
+            install -D -m 0644 "$isolinux_bin" config/includes.chroot/root/isolinux/isolinux.bin
+            install -D -m 0644 "$vesamenu" config/includes.chroot/root/isolinux/vesamenu.c32
+            ls -l config/includes.chroot/root/isolinux/isolinux.bin config/includes.chroot/root/isolinux/vesamenu.c32
+          '
+
+      - name: Build and test Linux-hosted Koronos runtime
+        run: |
+          set -euo pipefail
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+          cmake --build build --parallel 2
+          ctest --test-dir build --output-on-failure
+          bash tests/smoke.sh ./build/koronos-host
+
+      - name: Configure Debian live image
+        run: |
+          set -euo pipefail
+          mkdir -p config/package-lists
+          mkdir -p config/includes.chroot/usr/local/bin
+          mkdir -p config/includes.chroot/usr/share/doc/linuxkoronos
+          install -m 0755 build/koronos-host \
+            config/includes.chroot/usr/local/bin/koronos-host
+          cat > config/package-lists/linuxkoronos.list.chroot <<'PACKAGES'
+          linux-image-amd64
+          live-boot
+          systemd-sysv
+          ca-certificates
+          network-manager
+          isolinux
+          syslinux-common
+          PACKAGES
+          install -m 0644 README.md LICENSE \
+            config/includes.chroot/usr/share/doc/linuxkoronos/
+          cat > config/includes.chroot/usr/share/doc/linuxkoronos/IMAGE-BOUNDARY.txt <<'EOF'
+          LinuxKoronos hosted-runtime live image
+
+          Linux is the booted kernel and provides scheduling, memory,
+          filesystems, networking and device drivers. koronos-host is an
+          unprivileged hosted process adapter.
+
+          This image is not a freestanding Koronos kernel, a native
+          ChimeraIIOS Live/Installer/Recovery image, or a mobile flash image.
+
+          Commands:
+            koronos-host info
+            koronos-host profile
+            koronos-host run -- /usr/bin/id -u
+          EOF
+          lb config \
+            --mode debian \
+            --distribution bookworm \
+            --architectures amd64 \
+            --binary-images iso-hybrid \
+            --archive-areas "main contrib non-free non-free-firmware" \
+            --mirror-bootstrap http://deb.debian.org/debian \
+            --mirror-chroot http://deb.debian.org/debian \
+            --mirror-binary http://deb.debian.org/debian \
+            --security false \
+            --linux-packages none \
+            --bootappend-live "boot=live components quiet"
+
+      - name: Build Debian live ISO
+        run: |
+          set -euo pipefail
+          sudo lb build
+
+      - name: Verify ISO contents and create checksum
+        run: |
+          set -euo pipefail
+          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
+          test -n "$iso"
+          test -s "$iso"
+          file "$iso"
+          xorriso -indev "$iso" -find / -name vmlinuz -print \
+            | tee linuxkoronos-iso-kernel-check.txt
+          grep -q vmlinuz linuxkoronos-iso-kernel-check.txt
+          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
+          cp "$iso" linuxkoronos-hosted-live-amd64.iso
+
+      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
+          path: |
+            linuxkoronos-hosted-live-amd64.iso
+            linuxkoronos-hosted-live-amd64.iso.sha256
+            linuxkoronos-iso-kernel-check.txt
+          if-no-files-found: error
+          retention-days: 30
