@@ -162,6 +162,17 @@ jobs:
             sudo test -s /root/isolinux/vesamenu.c32
           }
           stage_isolinux_assets
+          # Debian live-build's Syslinux stage converts splash.svg itself. The
+          # current librsvg CLI rejects the legacy multi-positional-argument
+          # invocation, so pre-render splash.png with the modern CLI and remove
+          # splash.svg before lb binary (as recommended by the live manual).
+          splash_svg=config/bootloaders/isolinux/splash.svg
+          splash_png=config/bootloaders/isolinux/splash.png
+          if [ -f "$splash_svg" ]; then
+            /usr/bin/rsvg-convert --format png --height 480 --width 640 "$splash_svg" --output "$splash_png"
+            test -s "$splash_png"
+            rm -f "$splash_svg"
+          fi
           sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 | tee boot-assets.sha256
           # Keep the required vendor files available to each live-build phase.
           sudo env "PATH=/usr/local/bin:$PATH" lb bootstrap
