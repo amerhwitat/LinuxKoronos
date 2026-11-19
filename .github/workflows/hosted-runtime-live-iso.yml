@@ -41,10 +41,9 @@ jobs:
           sudo apt-get install -y \
             cmake g++ make live-build debootstrap squashfs-tools \
             xorriso debian-archive-keyring isolinux syslinux-common
-          # live-build's BIOS stage reads /root/isolinux inside the
-          # chroot. Host /root is not copied into that chroot, so stage the
-          # package-owned modules through includes.chroot.
-          sudo bash -euo pipefail -c '
+          # Stage package-owned BIOS modules without sudo so the following
+          # unprivileged configuration step can write into includes.chroot.
+          bash -euo pipefail -c '
             isolinux_bin="$(dpkg -L isolinux | grep -E "/isolinux\\.bin$" | head -n 1)"
             vesamenu="$(dpkg -L syslinux-common | grep -E "/vesamenu\\.c32$" | head -n 1)"
             test -n "$isolinux_bin" && test -s "$isolinux_bin"
@@ -76,9 +75,6 @@ jobs:
           systemd-sysv
           ca-certificates
           network-manager
-          # live-build's chroot bootloader stage links these package-owned
-          # BIOS modules from /root/isolinux; host installation alone is
-          # insufficient because the links are resolved inside the chroot.
           isolinux
           syslinux-common
           PACKAGES
