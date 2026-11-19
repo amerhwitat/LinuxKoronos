@@ -32,91 +32,58 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out source
+        uses: actions/checkout@v4
 
-      - name: Install build and live-media tools
+      - name: Install live-image build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common librsvg2-bin
-          # Debian's ImageMagick/live-build SVG theme path still invokes the
-          # legacy `rsvg INPUT OUTPUT` interface. Bookworm ships
-          # `rsvg-convert` instead, so provide a narrow compatibility shim.
-          sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
-          #!/bin/sh
-          set -eu
-          # Preserve the old two-positional-argument form, but pass
-          # rsvg-convert options (for example --version/--help) through.
-          # Debian live-build invokes the renderer in both conversion and
-          # capability-probe contexts; rejecting every non-two-argument call
-          # aborts lb binary while installing the bootloader packages.
-          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
-            exec /usr/bin/rsvg-convert -o "$2" "$1"
-          fi
-          exec /usr/bin/rsvg-convert "$@"
-          RSVG
-          sudo chmod 0755 /usr/local/bin/rsvg
-          test -x /usr/local/bin/rsvg
-          test -x /usr/bin/rsvg-convert
-          cat > "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.svg" <<'SVG'
-          <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#204080"/></svg>
-          SVG
-          /usr/local/bin/rsvg "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.svg" "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.png"
-          test -s "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.png"
+          sudo apt-get install -y \
+            cmake g++ make live-build debootstrap squashfs-tools \
+            xorriso debian-archive-keyring
 
-      - name: Build and test the Linux-hosted Koronos runtime
+      - name: Build and test Linux-hosted Koronos runtime
         run: |
+          set -euo pipefail
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
           cmake --build build --parallel 2
           ctest --test-dir build --output-on-failure
           bash tests/smoke.sh ./build/koronos-host
 
-      - name: Prepare Debian live image with the hosted runtime
+      - name: Configure Debian live image
         run: |
           set -euo pipefail
-          mkdir -p config/includes.chroot/usr/local/bin
-          install -m 0755 build/koronos-host config/includes.chroot/usr/local/bin/koronos-host
-          # live-build invokes SVG conversion inside its chroot as well as on
-          # the host. The host shim above is not visible in that namespace.
           mkdir -p config/package-lists
-          cat > config/includes.chroot/usr/local/bin/rsvg <<'RSVG'
-          #!/bin/sh
-          set -eu
-          # Preserve the old two-positional-argument form, but pass
-          # rsvg-convert options (for example --version/--help) through.
-          # Debian live-build invokes the renderer in both conversion and
-          # capability-probe contexts; rejecting every non-two-argument call
-          # aborts lb binary while installing the bootloader packages.
-          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
-            exec /usr/bin/rsvg-convert -o "$2" "$1"
-          fi
-          exec /usr/bin/rsvg-convert "$@"
-          RSVG
-          chmod 0755 config/includes.chroot/usr/local/bin/rsvg
-          test -x config/includes.chroot/usr/local/bin/rsvg
-          printf '%s\n' librsvg2-bin > config/package-lists/linuxkoronos-svg.list.chroot
+          mkdir -p config/includes.chroot/usr/local/bin
           mkdir -p config/includes.chroot/usr/share/doc/linuxkoronos
-          install -m 0644 README.md LICENSE config/includes.chroot/usr/share/doc/linuxkoronos/
+          install -m 0755 build/koronos-host \
+            config/includes.chroot/usr/local/bin/koronos-host
+          cat > config/package-lists/linuxkoronos.list.chroot <<'PACKAGES'
+          live-boot
+          systemd-sysv
+          ca-certificates
+          network-manager
+          PACKAGES
+          install -m 0644 README.md LICENSE \
+            config/includes.chroot/usr/share/doc/linuxkoronos/
           cat > config/includes.chroot/usr/share/doc/linuxkoronos/IMAGE-BOUNDARY.txt <<'EOF'
           LinuxKoronos hosted-runtime live image
-          Linux is the booted kernel and provides scheduling, memory, filesystems,
-          networking and device drivers. koronos-host is an unprivileged hosted
-          process adapter. This image is not a freestanding Koronos kernel,
-          native Live/Installer/Recovery system, or mobile flash image.
-          Run: koronos-host info
-               koronos-host profile
-               koronos-host run -- /usr/bin/id -u
+
+          Linux is the booted kernel and provides scheduling, memory,
+          filesystems, networking and device drivers. koronos-host is an
+          unprivileged hosted process adapter.
+
+          This image is not a freestanding Koronos kernel, a native
+          ChimeraIIOS Live/Installer/Recovery image, or a mobile flash image.
+
+          Commands:
+            koronos-host info
+            koronos-host profile
+            koronos-host run -- /usr/bin/id -u
           EOF
-          mkdir -p config/archives
-          cat > config/archives/security.list.chroot <<'APT'
-          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-          APT
-          cat > config/archives/security.list.binary <<'APT'
-          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-          APT
           lb config \
             --mode debian \
             --distribution bookworm \
-            --parent-distribution bookworm \
             --architectures amd64 \
             --binary-images iso-hybrid \
             --archive-areas "main contrib non-free non-free-firmware" \
@@ -124,81 +91,23 @@ jobs:
             --mirror-chroot http://deb.debian.org/debian \
             --mirror-binary http://deb.debian.org/debian \
             --security false \
-            --mirror-chroot-security http://security.debian.org/debian-security \
-            --mirror-binary-security http://security.debian.org/debian-security \
-            --syslinux-theme live-build \
             --bootappend-live "boot=live components quiet"
-          helper=/usr/lib/live/build/lb_chroot_linux-image
-          test -f "$helper"
-          grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "$helper"
-          sudo sed -i -e 's@/dists/${LB_PARENT_DISTRIBUTION}/Contents-@/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-@g' -e 's@/dists/${LB_DISTRIBUTION}/Contents-@/dists/${LB_DISTRIBUTION}/main/Contents-@g' "$helper"
-          grep -Fq '/dists/${LB_DISTRIBUTION}/main/Contents-' "$helper"
-          # Use the vendor boot assets from the packages already installed
-          # above. Avoid a second apt download (which can fail independently
-          # after apt has resolved/fetched packages in restricted CI runners).
-          isolinux_bin="$(dpkg -L isolinux | grep -m1 -E '/isolinux[.]bin
-          # Seed the project-local live-build theme and the root-level
-          # ISOLINUX staging directory consumed by the Debian live-build
-          # chroot helpers in this runner. The bootstrap stage can remove the
-          # latter, so restore it between every phase that consumes it.
-          mkdir -p config/bootloaders/isolinux
-          cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
-          install -m 0644 "$isolinux_bin" config/bootloaders/isolinux/isolinux.bin
-          install -m 0644 "$vesamenu_mod" config/bootloaders/isolinux/vesamenu.c32
-          stage_isolinux_assets() {
-            sudo install -d /root/isolinux
-            sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
-            sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
-            sudo test -s /root/isolinux/isolinux.bin
-            sudo test -s /root/isolinux/vesamenu.c32
-          }
-          stage_isolinux_assets
-          # Debian live-build's Syslinux stage converts splash.svg itself. The
-          # current librsvg CLI rejects the legacy multi-positional-argument
-          # invocation, so pre-render splash.png with the modern CLI and remove
-          # splash.svg before lb binary (as recommended by the live manual).
-          splash_svg=config/bootloaders/isolinux/splash.svg
-          splash_png=config/bootloaders/isolinux/splash.png
-          if [ -f "$splash_svg" ]; then
-            /usr/bin/rsvg-convert --format png --height 480 --width 640 "$splash_svg" --output "$splash_png"
-            test -s "$splash_png"
-            rm -f "$splash_svg"
-          fi
-          # live-build's legacy Syslinux theme helper may pass every SVG in
-          # the theme directory to rsvg-convert in one invocation. Modern
-          # librsvg rejects multiple SVG inputs for PNG output. The splash is
-          # already rendered above, so remove all remaining SVG sources from
-          # this staged theme; keep the raster artwork and boot modules.
-          find config/bootloaders/isolinux -type f -name '*.svg' -delete
-          if find config/bootloaders/isolinux -type f -name '*.svg' -print -quit | grep -q .; then
-            echo "::error::Unrendered SVG remains in the Syslinux theme"
-            exit 1
-          fi
-          test -s "$splash_png"
-          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 "$splash_png" | tee boot-assets.sha256
-          # Keep the required vendor files available to each live-build phase.
-          sudo env "PATH=/usr/local/bin:$PATH" lb bootstrap
-          stage_isolinux_assets
-          sudo env "PATH=/usr/local/bin:$PATH" lb chroot
-          stage_isolinux_assets
-          # /root is intentionally not traversable by the unprivileged runner;
-          # hash the root-owned staging files with sudo, while keeping the
-          # checksum report in the workspace for artifact/debug visibility.
-          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
-          # Invoke Debian live-build through its supported entry point. Running
-          # the wrapper via "bash -x /usr/bin/lb" changes its bootstrap context
-          # and caused it to source /scripts/build.sh without the live-build
-          # helper functions (Echo: command not found). The rsvg compatibility
-          # shim is already smoke-tested above and installed in the chroot.
-          sudo env "PATH=/usr/local/bin:$PATH" lb binary
 
-      - name: Verify ISO and generate checksum
+      - name: Build Debian live ISO
+        run: |
+          set -euo pipefail
+          sudo lb build
+
+      - name: Verify ISO contents and create checksum
         run: |
           set -euo pipefail
           iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
           test -n "$iso"
           test -s "$iso"
           file "$iso"
+          xorriso -indev "$iso" -find / -name vmlinuz -print \
+            | tee linuxkoronos-iso-kernel-check.txt
+          grep -q vmlinuz linuxkoronos-iso-kernel-check.txt
           sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
           cp "$iso" linuxkoronos-hosted-live-amd64.iso
 
@@ -209,166 +118,6 @@ jobs:
           path: |
             linuxkoronos-hosted-live-amd64.iso
             linuxkoronos-hosted-live-amd64.iso.sha256
-          if-no-files-found: error
-          retention-days: 30
- || true)"
-          vesamenu_mod="$(dpkg -L syslinux-common | grep -m1 -E '/vesamenu[.]c32
-          # Seed the project-local live-build theme and the root-level
-          # ISOLINUX staging directory consumed by the Debian live-build
-          # chroot helpers in this runner. The bootstrap stage can remove the
-          # latter, so restore it between every phase that consumes it.
-          mkdir -p config/bootloaders/isolinux
-          cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
-          install -m 0644 "$isolinux_bin" config/bootloaders/isolinux/isolinux.bin
-          install -m 0644 "$vesamenu_mod" config/bootloaders/isolinux/vesamenu.c32
-          stage_isolinux_assets() {
-            sudo install -d /root/isolinux
-            sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
-            sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
-            sudo test -s /root/isolinux/isolinux.bin
-            sudo test -s /root/isolinux/vesamenu.c32
-          }
-          stage_isolinux_assets
-          # Debian live-build's Syslinux stage converts splash.svg itself. The
-          # current librsvg CLI rejects the legacy multi-positional-argument
-          # invocation, so pre-render splash.png with the modern CLI and remove
-          # splash.svg before lb binary (as recommended by the live manual).
-          splash_svg=config/bootloaders/isolinux/splash.svg
-          splash_png=config/bootloaders/isolinux/splash.png
-          if [ -f "$splash_svg" ]; then
-            /usr/bin/rsvg-convert --format png --height 480 --width 640 "$splash_svg" --output "$splash_png"
-            test -s "$splash_png"
-            rm -f "$splash_svg"
-          fi
-          # live-build's legacy Syslinux theme helper may pass every SVG in
-          # the theme directory to rsvg-convert in one invocation. Modern
-          # librsvg rejects multiple SVG inputs for PNG output. The splash is
-          # already rendered above, so remove all remaining SVG sources from
-          # this staged theme; keep the raster artwork and boot modules.
-          find config/bootloaders/isolinux -type f -name '*.svg' -delete
-          if find config/bootloaders/isolinux -type f -name '*.svg' -print -quit | grep -q .; then
-            echo "::error::Unrendered SVG remains in the Syslinux theme"
-            exit 1
-          fi
-          test -s "$splash_png"
-          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 "$splash_png" | tee boot-assets.sha256
-          # Keep the required vendor files available to each live-build phase.
-          sudo env "PATH=/usr/local/bin:$PATH" lb bootstrap
-          stage_isolinux_assets
-          sudo env "PATH=/usr/local/bin:$PATH" lb chroot
-          stage_isolinux_assets
-          # /root is intentionally not traversable by the unprivileged runner;
-          # hash the root-owned staging files with sudo, while keeping the
-          # checksum report in the workspace for artifact/debug visibility.
-          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
-          # Invoke Debian live-build through its supported entry point. Running
-          # the wrapper via "bash -x /usr/bin/lb" changes its bootstrap context
-          # and caused it to source /scripts/build.sh without the live-build
-          # helper functions (Echo: command not found). The rsvg compatibility
-          # shim is already smoke-tested above and installed in the chroot.
-          sudo env "PATH=/usr/local/bin:$PATH" lb binary
-
-      - name: Verify ISO and generate checksum
-        run: |
-          set -euo pipefail
-          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
-          test -n "$iso"
-          test -s "$iso"
-          file "$iso"
-          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
-          cp "$iso" linuxkoronos-hosted-live-amd64.iso
-
-      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
-        uses: actions/upload-artifact@v4
-        with:
-          name: linuxkoronos-hosted-live-amd64-\${{ github.sha }}
-          path: |
-            linuxkoronos-hosted-live-amd64.iso
-            linuxkoronos-hosted-live-amd64.iso.sha256
-          if-no-files-found: error
-          retention-days: 30
- || true)"
-          if [ -z "$isolinux_bin" ] || [ ! -s "$isolinux_bin" ]; then
-            echo "::error::Installed isolinux package does not provide isolinux.bin"
-            dpkg -L isolinux
-            exit 1
-          fi
-          if [ -z "$vesamenu_mod" ] || [ ! -s "$vesamenu_mod" ]; then
-            echo "::error::Installed syslinux-common package does not provide vesamenu.c32"
-            dpkg -L syslinux-common
-            exit 1
-          fi
-          # Seed the project-local live-build theme and the root-level
-          # ISOLINUX staging directory consumed by the Debian live-build
-          # chroot helpers in this runner. The bootstrap stage can remove the
-          # latter, so restore it between every phase that consumes it.
-          mkdir -p config/bootloaders/isolinux
-          cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
-          install -m 0644 "$isolinux_bin" config/bootloaders/isolinux/isolinux.bin
-          install -m 0644 "$vesamenu_mod" config/bootloaders/isolinux/vesamenu.c32
-          stage_isolinux_assets() {
-            sudo install -d /root/isolinux
-            sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
-            sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
-            sudo test -s /root/isolinux/isolinux.bin
-            sudo test -s /root/isolinux/vesamenu.c32
-          }
-          stage_isolinux_assets
-          # Debian live-build's Syslinux stage converts splash.svg itself. The
-          # current librsvg CLI rejects the legacy multi-positional-argument
-          # invocation, so pre-render splash.png with the modern CLI and remove
-          # splash.svg before lb binary (as recommended by the live manual).
-          splash_svg=config/bootloaders/isolinux/splash.svg
-          splash_png=config/bootloaders/isolinux/splash.png
-          if [ -f "$splash_svg" ]; then
-            /usr/bin/rsvg-convert --format png --height 480 --width 640 "$splash_svg" --output "$splash_png"
-            test -s "$splash_png"
-            rm -f "$splash_svg"
-          fi
-          # live-build's legacy Syslinux theme helper may pass every SVG in
-          # the theme directory to rsvg-convert in one invocation. Modern
-          # librsvg rejects multiple SVG inputs for PNG output. The splash is
-          # already rendered above, so remove all remaining SVG sources from
-          # this staged theme; keep the raster artwork and boot modules.
-          find config/bootloaders/isolinux -type f -name '*.svg' -delete
-          if find config/bootloaders/isolinux -type f -name '*.svg' -print -quit | grep -q .; then
-            echo "::error::Unrendered SVG remains in the Syslinux theme"
-            exit 1
-          fi
-          test -s "$splash_png"
-          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 "$splash_png" | tee boot-assets.sha256
-          # Keep the required vendor files available to each live-build phase.
-          sudo env "PATH=/usr/local/bin:$PATH" lb bootstrap
-          stage_isolinux_assets
-          sudo env "PATH=/usr/local/bin:$PATH" lb chroot
-          stage_isolinux_assets
-          # /root is intentionally not traversable by the unprivileged runner;
-          # hash the root-owned staging files with sudo, while keeping the
-          # checksum report in the workspace for artifact/debug visibility.
-          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
-          # Invoke Debian live-build through its supported entry point. Running
-          # the wrapper via "bash -x /usr/bin/lb" changes its bootstrap context
-          # and caused it to source /scripts/build.sh without the live-build
-          # helper functions (Echo: command not found). The rsvg compatibility
-          # shim is already smoke-tested above and installed in the chroot.
-          sudo env "PATH=/usr/local/bin:$PATH" lb binary
-
-      - name: Verify ISO and generate checksum
-        run: |
-          set -euo pipefail
-          iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
-          test -n "$iso"
-          test -s "$iso"
-          file "$iso"
-          sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
-          cp "$iso" linuxkoronos-hosted-live-amd64.iso
-
-      - name: Upload hosted-runtime ISO (not a native Koronos OS release)
-        uses: actions/upload-artifact@v4
-        with:
-          name: linuxkoronos-hosted-live-amd64-\${{ github.sha }}
-          path: |
-            linuxkoronos-hosted-live-amd64.iso
-            linuxkoronos-hosted-live-amd64.iso.sha256
+            linuxkoronos-iso-kernel-check.txt
           if-no-files-found: error
           retention-days: 30
