@@ -41,17 +41,16 @@ jobs:
           sudo apt-get install -y \
             cmake g++ make live-build debootstrap squashfs-tools \
             xorriso debian-archive-keyring isolinux syslinux-common
-          # Stage package-owned BIOS modules without sudo so the following
-          # unprivileged configuration step can write into includes.chroot.
-          bash -euo pipefail -c '
-            isolinux_bin="$(dpkg -L isolinux | grep -E "/isolinux\\.bin$" | head -n 1)"
-            vesamenu="$(dpkg -L syslinux-common | grep -E "/vesamenu\\.c32$" | head -n 1)"
-            test -n "$isolinux_bin" && test -s "$isolinux_bin"
-            test -n "$vesamenu" && test -s "$vesamenu"
-            install -D -m 0644 "$isolinux_bin" config/includes.chroot/root/isolinux/isolinux.bin
-            install -D -m 0644 "$vesamenu" config/includes.chroot/root/isolinux/vesamenu.c32
-            ls -l config/includes.chroot/root/isolinux/isolinux.bin config/includes.chroot/root/isolinux/vesamenu.c32
-          '
+          # live-build consumes bootloader overrides from config/bootloaders,
+          # not from the target chroot's /root directory. Stage the complete
+          # package-provided ISOLINUX tree and dereference package symlinks so
+          # the bootloader files remain available during the later sudo build.
+          test -d /usr/share/live/build/bootloaders/isolinux
+          install -d config/bootloaders/isolinux
+          cp -Lr /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
+          test -s config/bootloaders/isolinux/isolinux.bin
+          test -s config/bootloaders/isolinux/vesamenu.c32
+          ls -l config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32
 
       - name: Build and test Linux-hosted Koronos runtime
         run: |
