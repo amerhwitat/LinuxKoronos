@@ -38,6 +38,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common syslinux-utils librsvg2-bin cpio
+          # live-build may remove host syslinux packages during lb binary.
+          # Keep the vendor isohybrid executable available independently in /usr/local/bin.
+          hybrid_pkg_dir="$(mktemp -d)"
+          mkdir -p "$hybrid_pkg_dir/extracted"
+          (cd "$hybrid_pkg_dir" && apt-get download syslinux-utils)
+          hybrid_deb="$(find "$hybrid_pkg_dir" -maxdepth 1 -type f -name 'syslinux-utils_*.deb' -print -quit)"
+          test -n "$hybrid_deb" && test -s "$hybrid_deb"
+          dpkg-deb -x "$hybrid_deb" "$hybrid_pkg_dir/extracted"
+          isohybrid_bin="$(find "$hybrid_pkg_dir/extracted" -type f -name isohybrid -print -quit)"
+          test -n "$isohybrid_bin" && test -s "$isohybrid_bin"
+          sudo install -m 0755 "$isohybrid_bin" /usr/local/bin/isohybrid
+          test -x /usr/local/bin/isohybrid
           # Debian's ImageMagick/live-build SVG theme path still invokes the
           # legacy `rsvg INPUT OUTPUT` interface. Bookworm ships
           # `rsvg-convert` instead, so provide a narrow compatibility shim.
