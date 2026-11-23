@@ -37,7 +37,7 @@ jobs:
       - name: Install build and live-media tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common librsvg2-bin
+          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common librsvg2-bin cpio
           # Debian's ImageMagick/live-build SVG theme path still invokes the
           # legacy `rsvg INPUT OUTPUT` interface. Bookworm ships
           # `rsvg-convert` instead, so provide a narrow compatibility shim.
@@ -160,6 +160,12 @@ jobs:
           # latter, so restore it between every phase that consumes it.
           mkdir -p config/bootloaders/isolinux
           cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
+          # Debian mode does not generate live-build's expected bootlogo input.
+          # lb_binary_syslinux unconditionally extracts it as a CPIO archive;
+          # provide a valid empty newc archive so the subsequent theme rebuild
+          # can populate it from the selected theme (not an executable payload).
+          : | cpio -o -H newc > config/bootloaders/isolinux/bootlogo
+          test -s config/bootloaders/isolinux/bootlogo
           install -m 0644 "$isolinux_bin" config/bootloaders/isolinux/isolinux.bin
           install -m 0644 "$vesamenu_mod" config/bootloaders/isolinux/vesamenu.c32
           stage_isolinux_assets() {
