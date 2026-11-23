@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: linuxkoronos-live-iso-\${{ github.ref }}
+  group: linuxkoronos-live-iso-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -213,7 +213,7 @@ jobs:
       - name: Upload hosted-runtime ISO (not a native Koronos OS release)
         uses: actions/upload-artifact@v4
         with:
-          name: linuxkoronos-hosted-live-amd64-\${{ github.sha }}
+          name: linuxkoronos-hosted-live-amd64-${{ github.sha }}
           path: |
             linuxkoronos-hosted-live-amd64.iso
             linuxkoronos-hosted-live-amd64.iso.sha256
