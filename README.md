@@ -49,6 +49,14 @@ Linux bootloader → Linux kernel → systemd / user session
 
 The current host runtime does not replace Linux's kernel, scheduler, VFS, networking stack, device drivers, or systemd. A future Koronos host ABI/service layer can be added behind this boundary with separately versioned contracts.
 
+### Native Koronos upstream integration boundary
+
+The freestanding-kernel implementation continues in [ChimeraIIOS PR #320](https://github.com/amerhwitat/ChimeraIIOS/pull/320), currently on upstream branch `feat/koronos-newc-initramfs-parser-20261119` at `ad15e5ed3fc03236afa39f328019b8f31d8ff223`. That work adds a bounded newc/CRC-newc initramfs parser, an in-memory read-only archive namespace, bounded RAM `/tmp`, target initramfs validation, and a narrow bootstrap file syscall ABI.
+
+Those components belong to the **freestanding Koronos kernel and native target launcher**. They are not LinuxKoronos host-runtime features and must not be represented as such: this repository delegates filesystem, process, memory, scheduling, and device behavior to the running Linux kernel. Shared command/provider catalogues and versioned host-service contracts may be reconciled here, but importing native-kernel source into this hosted adapter would not implement the corresponding host feature.
+
+The upstream PR remains open and unmerged; this note records the integration boundary, not a claim that the PR's code is already present or tested in this repository.
+
 ## Not yet implemented
 
 - Freestanding Koronos kernel boot, UEFI/BIOS boot, and native Live/Installer/Recovery init.
