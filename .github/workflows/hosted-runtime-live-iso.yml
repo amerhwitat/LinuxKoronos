@@ -101,7 +101,7 @@ jobs:
           RSVG
           chmod 0755 config/includes.chroot/usr/local/bin/rsvg
           test -x config/includes.chroot/usr/local/bin/rsvg
-          printf '%s\n' librsvg2-bin > config/package-lists/linuxkoronos-svg.list.chroot
+          printf '%s\n' librsvg2-bin syslinux-utils > config/package-lists/linuxkoronos-svg.list.chroot
           mkdir -p config/includes.chroot/usr/share/doc/linuxkoronos
           install -m 0644 README.md LICENSE config/includes.chroot/usr/share/doc/linuxkoronos/
           cat > config/includes.chroot/usr/share/doc/linuxkoronos/IMAGE-BOUNDARY.txt <<'EOF'
