@@ -44,18 +44,18 @@ jobs:
           sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
           #!/bin/sh
           set -eu
-          # Temporary CI diagnostic: expose the exact delegate argv so the
-          # live-build multi-SVG failure can be reproduced without guessing.
-          printf '[linuxkoronos rsvg shim] argc=%s' "$#" >&2
-          for arg do printf ' <%s>' "$arg" >&2; done
-          printf '\\n' >&2
-          # Preserve the old two-positional-argument interface, but also
-          # pass modern librsvg options (--version, --help, --format, -o,
-          # etc.) through unchanged. live-build/ImageMagick versions differ
-          # in how they invoke the SVG delegate.
+          # live-build's ImageMagick delegate passes options followed by
+          # INPUT OUTPUT (e.g. --format png --height 480 --width 640
+          # splash.svg splash.png). librsvg expects output via -o, not as a
+          # second positional input.
+          if [ "$#" -eq 8 ] && [ -n "$7" ] && [ -n "$8" ]; then
+            exec /usr/bin/rsvg-convert "$1" "$2" "$3" "$4" "$5" "$6" -o "$8" "$7"
+          fi
+          # Preserve the legacy two-positional-argument interface.
           if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
             exec /usr/bin/rsvg-convert -o "$2" "$1"
           fi
+          # Modern librsvg options such as --version and --help pass through.
           exec /usr/bin/rsvg-convert "$@"
           RSVG
           sudo chmod 0755 /usr/local/bin/rsvg
@@ -85,18 +85,18 @@ jobs:
           cat > config/includes.chroot/usr/local/bin/rsvg <<'RSVG'
           #!/bin/sh
           set -eu
-          # Temporary CI diagnostic: expose the exact delegate argv so the
-          # live-build multi-SVG failure can be reproduced without guessing.
-          printf '[linuxkoronos rsvg shim] argc=%s' "$#" >&2
-          for arg do printf ' <%s>' "$arg" >&2; done
-          printf '\\n' >&2
-          # Preserve the old two-positional-argument interface, but also
-          # pass modern librsvg options (--version, --help, --format, -o,
-          # etc.) through unchanged. live-build/ImageMagick versions differ
-          # in how they invoke the SVG delegate.
+          # live-build's ImageMagick delegate passes options followed by
+          # INPUT OUTPUT (e.g. --format png --height 480 --width 640
+          # splash.svg splash.png). librsvg expects output via -o, not as a
+          # second positional input.
+          if [ "$#" -eq 8 ] && [ -n "$7" ] && [ -n "$8" ]; then
+            exec /usr/bin/rsvg-convert "$1" "$2" "$3" "$4" "$5" "$6" -o "$8" "$7"
+          fi
+          # Preserve the legacy two-positional-argument interface.
           if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
             exec /usr/bin/rsvg-convert -o "$2" "$1"
           fi
+          # Modern librsvg options such as --version and --help pass through.
           exec /usr/bin/rsvg-convert "$@"
           RSVG
           chmod 0755 config/includes.chroot/usr/local/bin/rsvg
