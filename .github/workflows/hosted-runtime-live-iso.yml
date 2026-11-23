@@ -44,6 +44,11 @@ jobs:
           sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
           #!/bin/sh
           set -eu
+          # Temporary CI diagnostic: expose the exact delegate argv so the
+          # live-build multi-SVG failure can be reproduced without guessing.
+          printf '[linuxkoronos rsvg shim] argc=%s' "$#" >&2
+          for arg do printf ' <%s>' "$arg" >&2; done
+          printf '\\n' >&2
           # Preserve the old two-positional-argument interface, but also
           # pass modern librsvg options (--version, --help, --format, -o,
           # etc.) through unchanged. live-build/ImageMagick versions differ
@@ -80,6 +85,11 @@ jobs:
           cat > config/includes.chroot/usr/local/bin/rsvg <<'RSVG'
           #!/bin/sh
           set -eu
+          # Temporary CI diagnostic: expose the exact delegate argv so the
+          # live-build multi-SVG failure can be reproduced without guessing.
+          printf '[linuxkoronos rsvg shim] argc=%s' "$#" >&2
+          for arg do printf ' <%s>' "$arg" >&2; done
+          printf '\\n' >&2
           # Preserve the old two-positional-argument interface, but also
           # pass modern librsvg options (--version, --help, --format, -o,
           # etc.) through unchanged. live-build/ImageMagick versions differ
