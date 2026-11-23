@@ -44,11 +44,14 @@ jobs:
           sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
           #!/bin/sh
           set -eu
-          if [ "$#" -ne 2 ]; then
-            echo "usage: rsvg INPUT.svg OUTPUT" >&2
-            exit 2
+          # Preserve the old two-positional-argument interface, but also
+          # pass modern librsvg options (--version, --help, --format, -o,
+          # etc.) through unchanged. live-build/ImageMagick versions differ
+          # in how they invoke the SVG delegate.
+          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
+            exec /usr/bin/rsvg-convert -o "$2" "$1"
           fi
-          exec /usr/bin/rsvg-convert -o "$2" "$1"
+          exec /usr/bin/rsvg-convert "$@"
           RSVG
           sudo chmod 0755 /usr/local/bin/rsvg
           test -x /usr/local/bin/rsvg
@@ -77,11 +80,14 @@ jobs:
           cat > config/includes.chroot/usr/local/bin/rsvg <<'RSVG'
           #!/bin/sh
           set -eu
-          if [ "$#" -ne 2 ]; then
-            echo "usage: rsvg INPUT.svg OUTPUT" >&2
-            exit 2
+          # Preserve the old two-positional-argument interface, but also
+          # pass modern librsvg options (--version, --help, --format, -o,
+          # etc.) through unchanged. live-build/ImageMagick versions differ
+          # in how they invoke the SVG delegate.
+          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
+            exec /usr/bin/rsvg-convert -o "$2" "$1"
           fi
-          exec /usr/bin/rsvg-convert -o "$2" "$1"
+          exec /usr/bin/rsvg-convert "$@"
           RSVG
           chmod 0755 config/includes.chroot/usr/local/bin/rsvg
           test -x config/includes.chroot/usr/local/bin/rsvg
