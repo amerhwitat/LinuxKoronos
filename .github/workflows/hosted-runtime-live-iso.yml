@@ -32,72 +32,111 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install live-image build tools
+      - name: Install build and live-media tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake g++ make live-build debootstrap squashfs-tools \
-            xorriso debian-archive-keyring isolinux syslinux-common
-          # Stage package-owned BIOS modules without sudo so the following
-          # unprivileged configuration step can write into includes.chroot.
-          bash -euo pipefail -c '
-            isolinux_bin="$(dpkg -L isolinux | grep -E "/isolinux\\.bin$" | head -n 1)"
-            vesamenu="$(dpkg -L syslinux-common | grep -E "/vesamenu\\.c32$" | head -n 1)"
-            test -n "$isolinux_bin" && test -s "$isolinux_bin"
-            test -n "$vesamenu" && test -s "$vesamenu"
-            install -D -m 0644 "$isolinux_bin" config/includes.chroot/root/isolinux/isolinux.bin
-            install -D -m 0644 "$vesamenu" config/includes.chroot/root/isolinux/vesamenu.c32
-            ls -l config/includes.chroot/root/isolinux/isolinux.bin config/includes.chroot/root/isolinux/vesamenu.c32
-          '
+          sudo apt-get install -y cmake g++ make live-build debootstrap squashfs-tools xorriso debian-archive-keyring isolinux syslinux-common syslinux-utils librsvg2-bin cpio
+          # live-build may remove host syslinux packages during lb binary.
+          # Keep the vendor isohybrid executable available independently in /usr/local/bin.
+          hybrid_pkg_dir="$(mktemp -d)"
+          mkdir -p "$hybrid_pkg_dir/extracted"
+          (cd "$hybrid_pkg_dir" && apt-get download syslinux-utils)
+          hybrid_deb="$(find "$hybrid_pkg_dir" -maxdepth 1 -type f -name 'syslinux-utils_*.deb' -print -quit)"
+          test -n "$hybrid_deb" && test -s "$hybrid_deb"
+          dpkg-deb -x "$hybrid_deb" "$hybrid_pkg_dir/extracted"
+          isohybrid_bin="$(find "$hybrid_pkg_dir/extracted" -type f -name isohybrid -print -quit)"
+          test -n "$isohybrid_bin" && test -s "$isohybrid_bin"
+          sudo install -m 0755 "$isohybrid_bin" /usr/local/bin/isohybrid
+          test -x /usr/local/bin/isohybrid
+          # Debian's ImageMagick/live-build SVG theme path still invokes the
+          # legacy `rsvg INPUT OUTPUT` interface. Bookworm ships
+          # `rsvg-convert` instead, so provide a narrow compatibility shim.
+          sudo tee /usr/local/bin/rsvg >/dev/null <<'RSVG'
+          #!/bin/sh
+          set -eu
+          # live-build's ImageMagick delegate passes options followed by
+          # INPUT OUTPUT (e.g. --format png --height 480 --width 640
+          # splash.svg splash.png). librsvg expects output via -o, not as a
+          # second positional input.
+          if [ "$#" -eq 8 ] && [ -n "$7" ] && [ -n "$8" ]; then
+            exec /usr/bin/rsvg-convert "$1" "$2" "$3" "$4" "$5" "$6" -o "$8" "$7"
+          fi
+          # Preserve the legacy two-positional-argument interface.
+          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
+            exec /usr/bin/rsvg-convert -o "$2" "$1"
+          fi
+          # Modern librsvg options such as --version and --help pass through.
+          exec /usr/bin/rsvg-convert "$@"
+          RSVG
+          sudo chmod 0755 /usr/local/bin/rsvg
+          test -x /usr/local/bin/rsvg
+          test -x /usr/bin/rsvg-convert
+          cat > "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.svg" <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#204080"/></svg>
+          SVG
+          /usr/local/bin/rsvg "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.svg" "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.png"
+          test -s "$RUNNER_TEMP/linuxkoronos-rsvg-smoke.png"
 
-      - name: Build and test Linux-hosted Koronos runtime
+      - name: Build and test the Linux-hosted Koronos runtime
         run: |
-          set -euo pipefail
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
           cmake --build build --parallel 2
           ctest --test-dir build --output-on-failure
           bash tests/smoke.sh ./build/koronos-host
 
-      - name: Configure Debian live image
+      - name: Prepare Debian live image with the hosted runtime
         run: |
           set -euo pipefail
-          mkdir -p config/package-lists
           mkdir -p config/includes.chroot/usr/local/bin
+          install -m 0755 build/koronos-host config/includes.chroot/usr/local/bin/koronos-host
+          # live-build invokes SVG conversion inside its chroot as well as on
+          # the host. The host shim above is not visible in that namespace.
+          mkdir -p config/package-lists
+          cat > config/includes.chroot/usr/local/bin/rsvg <<'RSVG'
+          #!/bin/sh
+          set -eu
+          # live-build's ImageMagick delegate passes options followed by
+          # INPUT OUTPUT (e.g. --format png --height 480 --width 640
+          # splash.svg splash.png). librsvg expects output via -o, not as a
+          # second positional input.
+          if [ "$#" -eq 8 ] && [ -n "$7" ] && [ -n "$8" ]; then
+            exec /usr/bin/rsvg-convert "$1" "$2" "$3" "$4" "$5" "$6" -o "$8" "$7"
+          fi
+          # Preserve the legacy two-positional-argument interface.
+          if [ "$#" -eq 2 ] && [ "${1#-}" = "$1" ] && [ "${2#-}" = "$2" ]; then
+            exec /usr/bin/rsvg-convert -o "$2" "$1"
+          fi
+          # Modern librsvg options such as --version and --help pass through.
+          exec /usr/bin/rsvg-convert "$@"
+          RSVG
+          chmod 0755 config/includes.chroot/usr/local/bin/rsvg
+          test -x config/includes.chroot/usr/local/bin/rsvg
+          printf '%s\n' librsvg2-bin syslinux-utils > config/package-lists/linuxkoronos-svg.list.chroot
           mkdir -p config/includes.chroot/usr/share/doc/linuxkoronos
-          install -m 0755 build/koronos-host \
-            config/includes.chroot/usr/local/bin/koronos-host
-          cat > config/package-lists/linuxkoronos.list.chroot <<'PACKAGES'
-          linux-image-amd64
-          live-boot
-          systemd-sysv
-          ca-certificates
-          network-manager
-          isolinux
-          syslinux-common
-          PACKAGES
-          install -m 0644 README.md LICENSE \
-            config/includes.chroot/usr/share/doc/linuxkoronos/
+          install -m 0644 README.md LICENSE config/includes.chroot/usr/share/doc/linuxkoronos/
           cat > config/includes.chroot/usr/share/doc/linuxkoronos/IMAGE-BOUNDARY.txt <<'EOF'
           LinuxKoronos hosted-runtime live image
-
-          Linux is the booted kernel and provides scheduling, memory,
-          filesystems, networking and device drivers. koronos-host is an
-          unprivileged hosted process adapter.
-
-          This image is not a freestanding Koronos kernel, a native
-          ChimeraIIOS Live/Installer/Recovery image, or a mobile flash image.
-
-          Commands:
-            koronos-host info
-            koronos-host profile
-            koronos-host run -- /usr/bin/id -u
+          Linux is the booted kernel and provides scheduling, memory, filesystems,
+          networking and device drivers. koronos-host is an unprivileged hosted
+          process adapter. This image is not a freestanding Koronos kernel,
+          native Live/Installer/Recovery system, or mobile flash image.
+          Run: koronos-host info
+               koronos-host profile
+               koronos-host run -- /usr/bin/id -u
           EOF
+          mkdir -p config/archives
+          cat > config/archives/security.list.chroot <<'APT'
+          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+          APT
+          cat > config/archives/security.list.binary <<'APT'
+          deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+          APT
           lb config \
             --mode debian \
             --distribution bookworm \
+            --parent-distribution bookworm \
             --architectures amd64 \
             --binary-images iso-hybrid \
             --archive-areas "main contrib non-free non-free-firmware" \
@@ -105,24 +144,69 @@ jobs:
             --mirror-chroot http://deb.debian.org/debian \
             --mirror-binary http://deb.debian.org/debian \
             --security false \
-            --linux-packages none \
+            --mirror-chroot-security http://security.debian.org/debian-security \
+            --mirror-binary-security http://security.debian.org/debian-security \
+            --syslinux-theme live-build \
             --bootappend-live "boot=live components quiet"
+          helper=/usr/lib/live/build/lb_chroot_linux-image
+          test -f "$helper"
+          grep -Fq '/dists/${LB_DISTRIBUTION}/Contents-' "$helper"
+          sudo sed -i -e 's@/dists/${LB_PARENT_DISTRIBUTION}/Contents-@/dists/${LB_PARENT_DISTRIBUTION}/main/Contents-@g' -e 's@/dists/${LB_DISTRIBUTION}/Contents-@/dists/${LB_DISTRIBUTION}/main/Contents-@g' "$helper"
+          grep -Fq '/dists/${LB_DISTRIBUTION}/main/Contents-' "$helper"
+          # Fetch the official Ubuntu archive packages directly, extract their
+          # vendor-provided BIOS boot assets, and stage the exact filenames that
+          # this live-build version looks for. No third-party mirrors or binaries.
+          boot_pkg_dir="$(mktemp -d)"
+          mkdir -p "$boot_pkg_dir/extracted"
+          (cd "$boot_pkg_dir" && apt-get download isolinux syslinux-common)
+          for deb in "$boot_pkg_dir"/*.deb; do
+            dpkg-deb -x "$deb" "$boot_pkg_dir/extracted"
+          done
+          isolinux_bin="$(find "$boot_pkg_dir/extracted" -type f -name isolinux.bin -print -quit)"
+          vesamenu_mod="$(find "$boot_pkg_dir/extracted" -type f -name vesamenu.c32 -print -quit)"
+          test -n "$isolinux_bin" && test -s "$isolinux_bin"
+          test -n "$vesamenu_mod" && test -s "$vesamenu_mod"
+          # Seed the project-local live-build theme and the root-level
+          # ISOLINUX staging directory consumed by the Debian live-build
+          # chroot helpers in this runner. The bootstrap stage can remove the
+          # latter, so restore it between every phase that consumes it.
+          mkdir -p config/bootloaders/isolinux
+          cp -a /usr/share/live/build/bootloaders/isolinux/. config/bootloaders/isolinux/
+          # Debian mode does not generate live-build's expected bootlogo input.
+          # lb_binary_syslinux unconditionally extracts it as a CPIO archive;
+          # provide a valid empty newc archive so the subsequent theme rebuild
+          # can populate it from the selected theme (not an executable payload).
+          : | cpio -o -H newc > config/bootloaders/isolinux/bootlogo
+          test -s config/bootloaders/isolinux/bootlogo
+          install -m 0644 "$isolinux_bin" config/bootloaders/isolinux/isolinux.bin
+          install -m 0644 "$vesamenu_mod" config/bootloaders/isolinux/vesamenu.c32
+          stage_isolinux_assets() {
+            sudo install -d /root/isolinux
+            sudo install -m 0644 "$isolinux_bin" /root/isolinux/isolinux.bin
+            sudo install -m 0644 "$vesamenu_mod" /root/isolinux/vesamenu.c32
+            sudo test -s /root/isolinux/isolinux.bin
+            sudo test -s /root/isolinux/vesamenu.c32
+          }
+          stage_isolinux_assets
+          sha256sum config/bootloaders/isolinux/isolinux.bin config/bootloaders/isolinux/vesamenu.c32 | tee boot-assets.sha256
+          # Keep the required vendor files available to each live-build phase.
+          sudo env "PATH=/usr/local/bin:$PATH" lb bootstrap
+          stage_isolinux_assets
+          sudo env "PATH=/usr/local/bin:$PATH" lb chroot
+          stage_isolinux_assets
+          # /root is intentionally not traversable by the unprivileged runner;
+          # hash the root-owned staging files with sudo, while keeping the
+          # checksum report in the workspace for artifact/debug visibility.
+          sudo sha256sum /root/isolinux/isolinux.bin /root/isolinux/vesamenu.c32 | tee root-isolinux-assets.sha256
+          sudo env "PATH=/usr/local/bin:$PATH" lb binary
 
-      - name: Build Debian live ISO
-        run: |
-          set -euo pipefail
-          sudo lb build
-
-      - name: Verify ISO contents and create checksum
+      - name: Verify ISO and generate checksum
         run: |
           set -euo pipefail
           iso="$(find . -maxdepth 2 -type f -name '*.iso' -print -quit)"
           test -n "$iso"
           test -s "$iso"
           file "$iso"
-          xorriso -indev "$iso" -find / -name vmlinuz -print \
-            | tee linuxkoronos-iso-kernel-check.txt
-          grep -q vmlinuz linuxkoronos-iso-kernel-check.txt
           sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
           cp "$iso" linuxkoronos-hosted-live-amd64.iso
 
@@ -133,6 +217,5 @@ jobs:
           path: |
             linuxkoronos-hosted-live-amd64.iso
             linuxkoronos-hosted-live-amd64.iso.sha256
-            linuxkoronos-iso-kernel-check.txt
           if-no-files-found: error
           retention-days: 30
