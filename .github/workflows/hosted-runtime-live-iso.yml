@@ -209,6 +209,22 @@ jobs:
           file "$iso"
           sha256sum "$iso" | tee linuxkoronos-hosted-live-amd64.iso.sha256
           cp "$iso" linuxkoronos-hosted-live-amd64.iso
+          # Verify the exact hosted runtime built and smoke-tested above is
+          # embedded in the live root filesystem. This is an ISO payload
+          # integrity check, not a bare-metal Koronos boot claim.
+          squashfs="$RUNNER_TEMP/linuxkoronos-filesystem.squashfs"
+          extracted="$RUNNER_TEMP/koronos-host.from-iso"
+          xorriso -osirrox on -indev "$iso" -extract /live/filesystem.squashfs "$squashfs"
+          test -s "$squashfs"
+          unsquashfs -cat "$squashfs" usr/local/bin/koronos-host > "$extracted"
+          cmp --silent build/koronos-host "$extracted"
+          sha256sum build/koronos-host "$extracted" | tee linuxkoronos-hosted-runtime-in-iso.sha256
+          cat > linuxkoronos-iso-boundary.txt <<'EOF'
+          ISO payload verification passed: /usr/local/bin/koronos-host inside
+          the Debian live filesystem is byte-identical to the host-built and
+          smoke-tested executable. The image still boots Debian Linux; this is
+          not a freestanding Koronos kernel ISO or native Koronos acceptance.
+          EOF
 
       - name: Upload hosted-runtime ISO (not a native Koronos OS release)
         uses: actions/upload-artifact@v4
@@ -217,5 +233,7 @@ jobs:
           path: |
             linuxkoronos-hosted-live-amd64.iso
             linuxkoronos-hosted-live-amd64.iso.sha256
+            linuxkoronos-hosted-runtime-in-iso.sha256
+            linuxkoronos-iso-boundary.txt
           if-no-files-found: error
           retention-days: 30
